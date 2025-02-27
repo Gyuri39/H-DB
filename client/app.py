@@ -59,7 +59,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.4.0.0-alpha</p>
+		<p style="font-size:15px:">Version 0.5.0.0-alpha</p>
 		<p>Welcome to the alpha test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
