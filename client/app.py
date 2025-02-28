@@ -1,12 +1,19 @@
 #Python path designation
 import sys,os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#Import packages
+#Import streamlit
 import streamlit as st
+st.set_page_config(
+	page_title = "Web UI",
+	page_icon = "yin-yang",
+	layout = "wide"
+)
+#Import packages
 import datetime
 from streamlit_option_menu import option_menu
 from my_pages import ViewData, AddData, TrainModel, TestModel
 from server.login import OpenAuthenticator, LoginWidget, LogoutWidget, UserRegisterWidget, ForgotUsernameWidget, ForgotPasswordWidget, PasswordResetWidget
+import firebase_admin	# Firestore
 
 def show_login_page():
 	with st.sidebar:
@@ -59,7 +66,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.4.0.0-alpha</p>
+		<p style="font-size:15px:">Version 0.1.0.0-beta</p>
 		<p>Welcome to the alpha test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
@@ -111,11 +118,10 @@ def show_main_app():
 
 #Run the code
 def main():
-	st.set_page_config(
-		page_title = "Web UI",
-		page_icon = "yin-yang",
-		layout = "wide"
-	)
+	if not firebase_admin._apps:
+		cred = firebase_admin.credentials.Certificate(st.secrets["firebase"])
+		firebase_admin.initialize_app(cred)
+		st.session_state.db = firebase_admin.firestore.client()
 	st.session_state.authenticator = OpenAuthenticator()
 	if "authentication_status" not in st.session_state:
 		st.session_state.authentication_status = None

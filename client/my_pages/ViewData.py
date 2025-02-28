@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.scale import register_scale
 from utils.graph_scale import ReciprocalScale
@@ -128,7 +129,6 @@ def createPage():
 						X_upload = st.selectbox("Select X-axis of uploaded file", df_upload.columns, index=0)
 						Y_upload = st.selectbox("Select Y-axis of uploaded file", df_upload.columns, index=1)
 						ax.scatter(df_upload[X_upload], df_upload[Y_upload], label="Your File")
-					ax.secondary_xaxis('top')
 					ax.secondary_yaxis('right')
 					ax.legend(loc='lower right', bbox_to_anchor=(1.0,1.1))
 					
@@ -138,15 +138,32 @@ def createPage():
 					if x_scale == "Linear":
 						ax.set_xscale("linear")
 						ax.set_xlabel(X_axis)
+#						ax.secondary_xaxis('top', functions=(lambda x: 1/x, lambda x: 1/x))
 					elif x_scale == "Logarithmic":
 						ax.set_xscale("log")
 						ax.set_xlabel(X_axis)
+						ax.secondary_xaxis('top')
 					elif x_scale == "Reciprocal":
 						ax.set_xscale("reciprocal")
-						ax.set_xlabel(f"1/{X_axis}")
+						ax.set_xlabel(X_axis)
 						(xmin, xmax)  = ax.get_xlim()
 						ax.set_xlim(xmax, xmin)
 						ReciprocalScale(ax.xaxis).adjust_offset(ax.xaxis)
+						primary_xticks = ax.get_xticks()
+						offset_x = 10 ** (np.floor(np.log10(np.max(primary_xticks))) - 1)
+						secondary_xticks = np.arange(np.floor(np.min(primary_xticks)/offset_x) * offset_x, np.ceil(np.max(primary_xticks)/offset_x) * offset_x, offset_x)
+#						st.success(primary_xticks)
+#						st.success(secondary_xticks)
+#						secax = ax.secondary_xaxis('top', (lambda x : x, lambda x: x))
+#						secax.xaxis.set_major_locator(AutoLocator())
+#						secax.set_xticks(secondary_xticks)
+#						secax.set_xticks([1000])
+#						secax.set_xlabel(X_axis)
+#						secax.xaxis.set_major_locator(MaxNLocator(nbins=len(secondary_xticks)/2))
+#						secax.xaxis.set_minor_locator(AutoMinorLocator())
+#						secax.set_xticks([1000, 1100])
+#						secax.set_xticklabels(secondary_xticks)
+#						secax.set_xticklabels([f"{offset_x/t:.2g}" for t in secondary_xticks])
 					else:
 						raise NotImplementedError(f"x_scale option {x_scale} is not implemented.")
 					if y_scale == "Linear":
@@ -157,10 +174,10 @@ def createPage():
 						ax.set_ylabel(Y_axis)
 					elif y_scale == "Reciprocal":
 						ax.set_yscale("reciprocal")
-						ax.set_ylabel(f"1/{Y_axis}")
+						ax.set_ylabel(Y_axis)
 						(ymin, ymax) = ax.get_ylim()
 						ax.set_ylim(ymax, ymin)
-						Reciprocal_scale(ax.yaxis).adjust_offset(ax.yaxis)
+						ReciprocalScale(ax.yaxis).adjust_offset(ax.yaxis)
 					else:
 						raise NotImplementedError(f"y_scale option {y_scale} is not implemented.")
 					ax.grid(color='gray', ls='-.', lw=0.75)
