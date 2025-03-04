@@ -107,11 +107,11 @@ def show_main_app():
 			orientation="horizontal"
 		)
 		if sub_menu == "Generate Model":
-			st.warning("under development")
-#			TrainModel.createPage()
+#			st.warning("under development")
+			TrainModel.createPage()
 		elif sub_menu == "Apply Model":
-			st.warning("under development")
-#			TestModel.createPage()
+#			st.warning("under development")
+			TestModel.createPage()
 	elif main_menu == "Option":
 			st.warning("under development")
 

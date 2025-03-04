@@ -22,7 +22,6 @@ def createPage():
 		st.session_state.DataLabels = {}
 
 	scale_options = ['Linear', 'Logarithmic', 'Reciprocal']
-	#scale_options = ['Linear', 'Logarithmic']
 	register_scale(ReciprocalScale)
 
 	con11, con12 = st.columns([0.5, 0.5])
@@ -32,12 +31,12 @@ def createPage():
 	
 	with con11:
 		st.subheader("Filter data files on the server")
-		filter_result = filter_filelist(DATA_DIR)
+		filter_result = filter_filelist()
 
 	with con12:
 		st.subheader("Select data to view")
 		filtered_container = st.container()
-		filtered_list = [file.name for file in filter_result.filelist]
+		filtered_list = [name for name in filter_result.filelist]
 		select_all = st.checkbox("Select all")
 		if select_all:
 			selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list)
@@ -51,7 +50,7 @@ def createPage():
 			st.session_state.PreselectedFilterResult = filter_result
 			last_selected = st.radio("Select a file to view info", selected_options)
 			if last_selected:
-				dwd_object = load_DWD(Path(DATA_DIR) / last_selected)
+				dwd_object = load_DWD(last_selected)
 				with st.expander("See dataframe"):
 					st.dataframe(info_DWD(dwd_object, 'data').style.format("{:.3e}"), width=1000)
 				save_csv_button(info_DWD(dwd_object, 'data'))
@@ -60,7 +59,7 @@ def createPage():
 
 	with con22:
 		if selected_options and last_selected:
-			dwd_object = load_DWD(Path(DATA_DIR) / last_selected)
+			dwd_object = load_DWD(last_selected)
 			st.success("Detailed information of selected data")
 			st.markdown(f"**{info_DWD(dwd_object, 'material')}, {info_DWD(dwd_object, 'hydrogen')}, {info_DWD(dwd_object, 'attribute')}, {info_DWD(dwd_object, 'method')}**")
 			st.markdown(f"Uploaded by *{info_DWD(dwd_object, 'uploader')}* in {info_DWD(dwd_object, 'date')}")
@@ -70,8 +69,8 @@ def createPage():
 			st.markdown(f"Pre-treatment information (if any): {info_DWD(dwd_object, 'descript_pretreatment')}")
 			st.markdown(f"Method in detail (if any): {info_DWD(dwd_object, 'descript_methoddetail')}")
 			st.markdown(f"Else (if any): {info_DWD(dwd_object, 'descript_else')}")
-			st.markdown(f"This data has received {len(info_DWD(dwd_object, 'thumbsup'))} {':material/thumb_up:'} and {len(info_DWD(dwd_object, 'thumbsdown'))} {':material/thumb_down:'}")
-			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else Path(last_selected).stem)
+			st.markdown(f"**This data has received {len(info_DWD(dwd_object, 'who_verified'))} verification(s).**")
+			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else last_selected)
 			
 		else:
 			st.empty()
@@ -102,7 +101,7 @@ def createPage():
 			dataframes = {}
 			all_columns = set()
 			for file_name in selected_options:
-				dataframes[file_name] = info_DWD(load_DWD(Path(DATA_DIR) / file_name), 'data')
+				dataframes[file_name] = info_DWD(load_DWD(file_name), 'data')
 				all_columns.update(dataframes[file_name].columns)
 			all_columns = list(all_columns)	
 			if dataframes:
@@ -123,35 +122,32 @@ def createPage():
 					fig, ax = plt.subplots()
 					for file_name, df in dataframes.items():
 						if X_axis in df.columns and Y_axis in df.columns:
-							ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else Path(file_name).stem)
+							ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else file_name)
 					if st.session_state.DataFrameUploaded is not None:
 						df_upload = st.session_state.DataFrameUploaded
 						X_upload = st.selectbox("Select X-axis of uploaded file", df_upload.columns, index=0)
 						Y_upload = st.selectbox("Select Y-axis of uploaded file", df_upload.columns, index=1)
 						ax.scatter(df_upload[X_upload], df_upload[Y_upload], label="Your File")
-					ax.secondary_yaxis('right')
+#					ax.secondary_yaxis('right')
 					ax.legend(loc='lower right', bbox_to_anchor=(1.0,1.1))
 					
 					st.write("Adjust Axis Scaling")
 					x_scale = st.selectbox("X-axis scale", scale_options, index=0, key='x_scale')
 					y_scale = st.selectbox("Y-axis scale", scale_options, index=0, key='y_scale')
+					ax.set_xlabel(X_axis)
+					ax.set_ylabel(Y_axis)
 					if x_scale == "Linear":
 						ax.set_xscale("linear")
-						ax.set_xlabel(X_axis)
-#						ax.secondary_xaxis('top', functions=(lambda x: 1/x, lambda x: 1/x))
 					elif x_scale == "Logarithmic":
 						ax.set_xscale("log")
-						ax.set_xlabel(X_axis)
-						ax.secondary_xaxis('top')
+#						ax.secondary_xaxis('top')
 					elif x_scale == "Reciprocal":
 						ax.set_xscale("reciprocal")
-						ax.set_xlabel(X_axis)
 						(xmin, xmax)  = ax.get_xlim()
 						ax.set_xlim(xmax, xmin)
-						ReciprocalScale(ax.xaxis).adjust_offset(ax.xaxis)
 						primary_xticks = ax.get_xticks()
 						offset_x = 10 ** (np.floor(np.log10(np.max(primary_xticks))) - 1)
-						secondary_xticks = np.arange(np.floor(np.min(primary_xticks)/offset_x) * offset_x, np.ceil(np.max(primary_xticks)/offset_x) * offset_x, offset_x)
+#						secondary_xticks = np.arange(np.floor(np.min(primary_xticks)/offset_x) * offset_x, np.ceil(np.max(primary_xticks)/offset_x) * offset_x, offset_x)
 #						st.success(primary_xticks)
 #						st.success(secondary_xticks)
 #						secax = ax.secondary_xaxis('top', (lambda x : x, lambda x: x))
@@ -168,16 +164,12 @@ def createPage():
 						raise NotImplementedError(f"x_scale option {x_scale} is not implemented.")
 					if y_scale == "Linear":
 						ax.set_yscale("linear")
-						ax.set_ylabel(Y_axis)
 					elif y_scale == "Logarithmic":
 						ax.set_yscale("log")
-						ax.set_ylabel(Y_axis)
 					elif y_scale == "Reciprocal":
 						ax.set_yscale("reciprocal")
-						ax.set_ylabel(Y_axis)
 						(ymin, ymax) = ax.get_ylim()
 						ax.set_ylim(ymax, ymin)
-						ReciprocalScale(ax.yaxis).adjust_offset(ax.yaxis)
 					else:
 						raise NotImplementedError(f"y_scale option {y_scale} is not implemented.")
 					ax.grid(color='gray', ls='-.', lw=0.75)

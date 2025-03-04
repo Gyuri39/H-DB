@@ -45,8 +45,8 @@ class ReciprocalScale(mscale.ScaleBase):
 		data_min, data_max = axis.get_data_interval()
 		if data_min <= 0:
 			data_min = 1e-30
-		if data_max <= 0:
-			raise ValueError("Reciprocal scaling is only provided for positive data")
+		if data_max <= data_min:
+			raise ValueError(f"Reciprocal scaling is only provided for positive data: max={data_max} and min={data_min}")
 		reciprocal_range = 1.0 / np.array([data_max, data_min])
 		max_reciprocal = np.max([np.abs(reciprocal_range)])
 		self.offset = 10 ** np.floor(np.log10(max_reciprocal))
