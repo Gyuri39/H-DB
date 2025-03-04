@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 #Import streamlit
 import streamlit as st
 st.set_page_config(
-	page_title = "Web UI",
+	page_title = "Hydrogen DB",
 	page_icon = "yin-yang",
 	layout = "wide"
 )
