@@ -99,7 +99,7 @@ def createPage():
 
 			if save_button == True:
 				DWD = make_DWD(material, hydrogen, attribute, method, uploader, df_suggest, information_source, who_measured, purity, pretreatment, method_detail, description_else)
-				save_DWD(DWD, DATA_DIR)
+				save_DWD(DWD)
 			
 		else:
 			st.empty()

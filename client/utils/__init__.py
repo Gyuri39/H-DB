@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from dataclasses import dataclass
 from .graph_scale import ReciprocalScale
+from firebase_admin import firestore
 
 DATA_DIR = "client/datas/"
 MODEL_DIR = "client/models/"
@@ -43,19 +44,15 @@ class FilterResult():
 	def updateFilelist(self, filelist: list):
 		if not filelist:
 			raise KeyError("Empty updateFilelist")
-		#elif isinstance(filelist[0], file):
-		#	self.filelist = filelist
 		elif isinstance(filelist[0], str):
-			path = Path(DATA_DIR)
-			all_files = list(path.glob("*.dat"))
-			self.filelist = []
-			for file in list(path.glob("*.dat")):
-				if file.name in filelist:
-					self.filelist.append(file)
+			self.filelist = filelist
 		else:
-			raise TypeError(f"The element of filelist: {type(filelist)} must has a type of either file or string.")
+			raise TypeError(f"The element of filelist: {type(filelist)} must be a string representing a data ID.")
 
-def filter_filelist(path=DATA_DIR, material=None, hydrogen=None, attribute=None, method=None) -> FilterResult:
+def filter_filelist(collection_name="datasets", material=None, hydrogen=None, attribute=None, method=None) -> FilterResult:
+	db_client = firestore.client()
+	collection_ref = db_client.collection(collection_name)
+
 	def find_index(argument, listname):
 		indices = [i for i, val in enumerate(listname) if val == argument]
 		if len(indices) == 0:
@@ -64,6 +61,28 @@ def filter_filelist(path=DATA_DIR, material=None, hydrogen=None, attribute=None,
 			return indices[0]
 		else:
 			raise ValueError("Two or more arguments in the list")
+	def get_query(material_filter=None, hydrogen_filter=None, attribute_filter=None, method_filter=None):
+		query = collection_ref
+		if material_filter:
+			query = query.where(filter=firestore.FieldFilter("material", "==", material_filter))
+		if hydrogen_filter:
+			query = query.where(filter=firestore.FieldFilter("hydrogen", "==", hydrogen_filter))
+		if attribute_filter:
+			query = query.where(filter=firestore.FieldFilter("attribute", "==", attribute_filter))
+		if method_filter:
+			query = query.where(filter=firestore.FieldFilter("method", "==", method_filter))
+		return query
+	
+	if 'filtered_files' not in st.session_state:
+		st.session_state.filterd_files = []
+	if 'material_filter' not in st.session_state:
+		st.session_state.material_filter = None
+	if 'hydrogen_filter' not in st.session_state:
+		st.session_state.hydrogen_filter = None
+	if 'attribute_filter' not in st.session_state:
+		st.session_state.attribute_filter = None
+	if 'method_filter' not in st.session_state:
+		st.session_state.method_filter = None
 
 	if material:
 		material_filter = st.selectbox("Filter by material", MATERIAL_LIST, index=find_index(material, MATERIAL_LIST))
@@ -81,15 +100,26 @@ def filter_filelist(path=DATA_DIR, material=None, hydrogen=None, attribute=None,
 		method_filter = st.selectbox("Filter by method", METHOD_LIST, index=find_index(method, METHOD_LIST))
 	else:
 		method_filter = st.selectbox("Filter by method", METHOD_LIST, index=None)
-	all_files = list(Path(path).glob("*.dat"))
-	filtered_files = [
-		file for file in all_files if
-			(not material_filter or file.name.startswith(material_filter)) and
-			(not hydrogen_filter or f"_{hydrogen_filter}_" in file.name) and
-			(not attribute_filter or f"_{attribute_filter}_" in file.name) and
-			(not method_filter or f"_{method_filter}_" in file.name)
-	]
-	st.write(f"Found {len(filtered_files)} files matching the criteria.")
+
+	if (material_filter != st.session_state.material_filter or
+		hydrogen_filter != st.session_state.hydrogen_filter or
+		attribute_filter != st.session_state.attribute_filter or
+		method_filter != st.session_state.method_filter):
+		
+		st.session_state.material_filter = material_filter
+		st.session_state.hydrogen_filter = hydrogen_filter
+		st.session_state.attribute_filter = attribute_filter
+		st.session_state.method_filter = method_filter
+
+
+	query = get_query(st.session_state.material_filter, st.session_state.hydrogen_filter, st.session_state.attribute_filter, st.session_state.method_filter)
+	docs = query.stream()
+	filtered_files = []
+	for doc in docs:
+		doc_data = doc.to_dict()
+		filtered_files.append(doc.id)
+	st.session_state.filtered_files = filtered_files
+	
 	return FilterResult(material = material_filter, hydrogen = hydrogen_filter, attribute = attribute_filter, method = method_filter, filelist = filtered_files)
 
 def convert_to_dataframe(st_file):
