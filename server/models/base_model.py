@@ -3,14 +3,21 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import GridSearchCV
+from firebase_admin import firestore
+import joblib
+import base64
+from io import BytesIO, StringIO
 
 class BaseRegressionModel:
 	def __init__(self, name, description=""):
+		self.class_name = self.__class__.__name__
 		self.name = name
 		self.description = description
 		self.model = None
 		self.train_X = None
 		self.train_y = None
+		self.train_Xstd = None
+		self.train_ystd = None
 		self.scaler = None
 		self._yes_dev = False
 		self.training_info = None
@@ -84,13 +91,102 @@ class BaseRegressionModel:
 			string += f"  Test Score (R^2): {self.test_score:.4f}\n"
 		return string
 	
-	def save(self, file_path):
+	def serialize_model(self):
+		model_buffer = BytesIO()
+		joblib.dump(self.model, model_buffer)
+		model_bytes = model_buffer.getvalue()
+		return base64.b64encode(model_bytes).decode('utf-8')
+	
+	def serialize_scaler(self):
+		scaler_buffer = BytesIO()
+		joblib.dump(self.scaler, scaler_buffer)
+		scaler_bytes = scaler_buffer.getvalue()
+		return base64.b64encode(scaler_bytes).decode('utf-8')
+
+	def to_dict(self):
+		def df2csv(df):
+			if df is not None:
+				csv_buffer = StringIO()
+				df.to_csv(csv_buffer, index=False)
+				return csv_buffer.getvalue()
+			return None
+		return {
+			'class': self.class_name,
+			'name': self.name,
+			'description': self.description,
+			'model': self.serialize_model(),
+			'train_X': df2csv(self.train_X),
+			'train_y': df2csv(self.train_y),
+			'train_Xstd': df2csv(self.train_Xstd),
+			'train_ystd': df2csv(self.train_ystd),
+			'scaler': self.serialize_scaler(),
+			'_yes_dev': self._yes_dev,
+			'training_info': self.training_info,
+			'description_others': self.description_others,
+			'_yes_gridcv': self._yes_gridcv,
+			'param_grid': self.param_grid,
+			'grid_search': self.grid_search,
+			'best_params': self.best_params,
+			'train_score': self.train_score,
+			'test_score': self.test_score
+		}
+
+	def save(self, document_id, collection_name="models"):
 		if self.model.get_params():
 			self.description += f"{self.model.get_params()}"
-		with open(file_path, "wb") as f:
-			pickle.dump(self, f)
 
-	@staticmethod
-	def load(file_path):
-		with open(file_path, "rb") as f:
-			return pickle.load(f)
+		data = self.to_dict()
+		db_client = firestore.client()
+		doc_ref = db_client.collection(collection_name).document(document_id)
+		doc_ref.set(data)
+
+	@classmethod
+	def deserialize_model(cls, model_base64):
+		if model_base64:
+			model_bytes = base64.b64decode(model_base64.encode('utf-8'))
+			model_buffer = BytesIO(model_bytes)
+			return joblib.load(model_buffer)
+		return None
+
+	@classmethod
+	def deserialize_scaler(cls, scaler_base64):
+		if scaler_base64:
+			scaler_bytes = base64.b64decode(scaler_base64.encode('utf-8'))
+			scaler_buffer = BytesIO(scaler_bytes)
+			return joblib.load(scaler_buffer)
+		return None
+
+	@classmethod
+	def dictload(cls, document_id, collection_name="models"):
+		db_client = firestore.client()
+		doc_ref = db_client.collection(collection_name).document(document_id)
+		doc = doc_ref.get()
+
+		def csv2df(csv_name):
+			try:
+				df = pd.read_csv(StringIO(data.get(csv_name)))
+				return df
+			except:
+				return None
+
+		if doc.exists:
+			data = doc.to_dict()
+			model_class_name = data.get('class_name')
+			model_class = globals().get(model_class_name, cls)
+
+			data['model'] = cls.deserialize_model(data.get('model'))
+			data['scaler'] = cls.deserialize_scaler(data.get('scaler'))
+			for df_name in ['train_X', 'train_y', 'train_Xstd', 'train_ystd']:
+				data[df_name] = csv2df(df_name)
+			return data
+		else:
+			return None
+		
+	@classmethod
+	def load(cls, document_id, collection_name="models"):
+		dict_data = cls.dictload(document_id, collection_name)
+		instance = cls(name=dict_data['name'])
+		for key, value in dict_data.items():
+			if hasattr(instance, key):
+				setattr(instance, key, value)
+		return instance
