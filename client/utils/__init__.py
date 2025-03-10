@@ -127,7 +127,7 @@ def convert_to_dataframe(st_file):
 	if suffix == '.csv':
 		df = pd.read_csv(st_file)
 	elif suffix == '.txt':
-		df = pd.read_read-table(st_file, sep=r'[ \t.]')
+		df = pd.read_table(st_file, sep=r'[ \t.]')
 	elif suffix == 'xls' or 'xlsx':
 		df = pd.read_excel(st_file)
 	else:
