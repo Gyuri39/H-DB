@@ -26,7 +26,7 @@ PROPERTY_DICT = {"Diffusivity": "diffusion coefficient in m<sup>2</sup> s<sup>-1
 					}
 METHOD_LIST = ["Experiment", "Simulation", "Theory/Model"]
 
-KEY_PROPERTY = {"H": "hydrogen atom", "D": "deuterium atom", "T": "tritium atom",
+HYDROGEN_DICT = {"H": "hydrogen atom", "D": "deuterium atom", "T": "tritium atom",
 					"H2": "H2 molecule", "D2": "D2 molecule", "T2": "T2 molecule",
 					"HD": "HD molecule", "DT": "DT molecule", "HT": "HT molecule",
 					"else": "Combination, no information, etc."}	# TEMP(temperature) is regarded as the common information
@@ -89,9 +89,9 @@ def filter_filelist(collection_name="datasets", material=None, hydrogen=None, at
 	else:
 		material_filter = st.selectbox("Filter by material", MATERIAL_LIST, index=None)
 	if hydrogen:
-		hydrogen_filter = st.selectbox("Filter by hydrogen", KEY_PROPERTY.keys(), index=find_index(hydrogen, KEY_PROPERTY.keys()))
+		hydrogen_filter = st.selectbox("Filter by hydrogen", HYDROGEN_DICT.keys(), index=find_index(hydrogen, HYDROGEN_DICT.keys()))
 	else:
-		hydrogen_filter = st.selectbox("Filter by hydrogen", KEY_PROPERTY.keys(), index=None)
+		hydrogen_filter = st.selectbox("Filter by hydrogen", HYDROGEN_DICT.keys(), index=None)
 	if attribute:
 		attribute_filter = st.selectbox("Filter by property", PROPERTY_DICT.keys(), index=find_index(attribute, PROPERTY_DICT.keys()))
 	else:
@@ -151,4 +151,4 @@ def are_dataframes_equal(df1, df2, tolerance=0.05):	#'tolerance' relative tolera
 	df2_sorted = df2_common.sort_values(by=common_cols).reset_index(drop=True)
 	if df1_sorted.shape != df2_sorted.shape:
 		return False
-	return np.allclose(df1_sorted, df2_sorted, rtol=tolerance, atol=0)
+	return np.allclose(df1_sorted, df2_sorted, rtol=tolerance, atol=0) 

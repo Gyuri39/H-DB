@@ -9,8 +9,9 @@ import joblib
 import base64
 
 class LinearRegressionModel(BaseRegressionModel):
-	def __init__(self, degree=1):
+	def __init__(self, name=None, degree=1):
 		super().__init__(name="Linear", description = "Linear regression with polynomial features")
+		self.class_name = self.__class__.__name__
 		self.degree = degree
 		self.poly = PolynomialFeatures(self.degree, include_bias=False)
 		self.model = LinearRegression()
@@ -43,7 +44,9 @@ class LinearRegressionModel(BaseRegressionModel):
 	def predict(self, X):
 		if self.model is None:
 			raise NotImplementedError("A model must be initilalized before predicting.")
-		X_test_poly = self.poly.fit_transform(self.scaler.transform(X))
+
+		X_scaled = self.scaler.transform(X)
+		X_test_poly = self.poly.transform(X_scaled)
 		return self.model.predict(X_test_poly)
 
 	def serialize_poly(self):
@@ -64,23 +67,26 @@ class LinearRegressionModel(BaseRegressionModel):
 	def deserialize_poly(cls, poly_base64):
 		if poly_base64:
 			poly_bytes = base64.b64decode(poly_base64.encode('utf-8'))
-			poly_buffer = io.BytesIO(poly_bytes)
+			poly_buffer = BytesIO(poly_bytes)
 			return joblib.load(poly_buffer)
 		return None
 	
 	@classmethod
 	def dictload(cls, document_id, collection_name="models"):
-		base_dict = super().load(document_id)
+		base_dict = BaseRegressionModel.dictload(document_id, collection_name)
 		if base_dict:
-			data = base_dict.__dict__.copy()
+			data = base_dict.copy()
 			data['poly'] = cls.deserialize_poly(data.get('poly'))
 			return data
+		else:
+			print("Base_dict not detected")
 		return None
 
 class ElasticNetModel(LinearRegressionModel):
 	#def __init__(self, degree=1, alpha=0.0, r=0.0):
-	def __init__(self, degree=1, param_grid=None):
+	def __init__(self, name=None, degree=1, param_grid=None):
 		super().__init__()
+		self.class_name = self.__class__.__name__
 		self.param_grid = param_grid or {'alpha': [0.1, 1.0, 10.0], 'l1_ratio': [0.0, 0.2, 0.5, 0.8, 1.0]}
 		self.name="Elastic"
 		description="Elastic net with polynomial features"

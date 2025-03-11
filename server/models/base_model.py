@@ -7,6 +7,13 @@ from firebase_admin import firestore
 import joblib
 import base64
 from io import BytesIO, StringIO
+import importlib
+
+MODEL_MODULES = {
+	"LinearRegressionModel": "server.models.linear_regression_model",
+	"ElasticNetModel": "server.models.linear_regression_model",
+	"GaussianProcessRegressionModel": "server.models.gaussian_process_model"
+}
 
 class BaseRegressionModel:
 	def __init__(self, name, description=""):
@@ -72,8 +79,8 @@ class BaseRegressionModel:
 			self.best_params = grid_search.best_params_
 			self.train_score = grid_search.best_score_
 		else:
-			self.model.fit(self.train_X, self.train_y)
-			self.train_score = self.model.score(self.train_X, self.train_y)
+			self.model.fit(X_train, self.train_y)
+			self.train_score = self.model.score(X_train, self.train_y)
 
 	def predict(self, X):
 		if self.model is None:
@@ -171,21 +178,41 @@ class BaseRegressionModel:
 
 		if doc.exists:
 			data = doc.to_dict()
-			model_class_name = data.get('class_name')
-			model_class = globals().get(model_class_name, cls)
+			model_class_name = data.get('class', None)
+			model_class = cls
+			if model_class_name:
+				try:
+					module_name = MODEL_MODULES[model_class_name]
+					module = importlib.import_module(module_name)
+					model_class = getattr(module, model_class_name, cls)
+				except Exception as e:
+					print(f"Error loading class {model_class_name}: {e}")
 
 			data['model'] = cls.deserialize_model(data.get('model'))
 			data['scaler'] = cls.deserialize_scaler(data.get('scaler'))
 			for df_name in ['train_X', 'train_y', 'train_Xstd', 'train_ystd']:
 				data[df_name] = csv2df(df_name)
+			data['_model_class'] = model_class if model_class and issubclass(model_class, BaseRegressionModel) else cls
 			return data
 		else:
 			return None
 		
 	@classmethod
 	def load(cls, document_id, collection_name="models"):
-		dict_data = cls.dictload(document_id, collection_name)
-		instance = cls(name=dict_data['name'])
+		dict_data = cls.dictload(document_id, collection_name) if cls != BaseRegressionModel else BaseRegressionModel.dictload(document_id)
+		if dict_data is None:
+			print("No data returned from dictload")
+			return None
+
+		model_class = dict_data.pop('_model_class', cls)
+
+		if model_class != cls:
+			dict_data = model_class.dictload(document_id, collection_name)
+			if dict_data is None:
+				print("No data returned from subclass dictload")
+				return None
+		instance = model_class(name=dict_data['name'])
+
 		for key, value in dict_data.items():
 			if hasattr(instance, key):
 				setattr(instance, key, value)

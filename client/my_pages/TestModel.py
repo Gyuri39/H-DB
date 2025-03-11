@@ -62,7 +62,7 @@ def createPage():
 						test_df = False
 						st.warning("The test set is not properly imported.")
 			elif want_test == "Grid points":
-				grid_row = [2] * len(train_X.columns)
+				grid_row = [5] * len(train_X.columns)
 				df_combined = pd.DataFrame([df_min.values, df_max.values, grid_row], index=['min', 'max', 'number of grid'], columns=train_X.columns)
 				test_df_grid = st.data_editor(df_combined)
 				if (test_df_grid.loc['number of grid'] < 2).any():
@@ -90,16 +90,13 @@ def createPage():
 		if st.checkbox("Evalutate") and test_df is not False:
 			st.subheader("Evaluation result")
 			if selected_model._yes_dev == True:
-				print(type(selected_model.predict(test_df)), len(selected_model.predict(test_df)))
 				(test_y, test_ystd) = selected_model.predict(test_df)
 				df_predicted = pd.DataFrame({
-							"Prediction": test_y,
-							"Prediction_std": test_ystd
+							"Prediction": test_y.flatten(),
+							"Prediction_std": test_ystd.flatten()
 				})
 			elif selected_model._yes_dev == False:
-				test_y = selected_model.predict(test_df)#.flatten()
-				print("Shape of test_y:", test_y.shape)
-				print("Content of test_y", test_y)
+				test_y = selected_model.predict(test_df).flatten()
 				df_predicted = pd.DataFrame({"Prediction": test_y})
 			else:
 				raise NotImplementedError("Model is not implemented.")

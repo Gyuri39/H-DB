@@ -7,17 +7,22 @@ import joblib
 import base64
 
 class GaussianProcessRegressionModel(BaseRegressionModel):
-	def __init__(self):
+	def __init__(self, name=None):
 		super().__init__(name="GPR", description = "Gaussian process regression")
+		self.class_name = self.__class__.__name__
 		self._yes_dev = True
 		self.kernel = RBF()
 		self.multiple_char_lengths = False
-		self.alpha = 1e-10
+		self.alpha = 1.0
 		self.n_restarts = 0
-		self.noise_level_bounds = (1e-5, 1e+5)
-		self.model = GaussianProcessRegressor(kernel = self.kernel, alpha=self.alpha, n_restarts_optimizer=self.n_restarts, random_state=None, normalize_y=True)
+		self.length_scale_bounds = (1e-10, 1e+10)
+		self.noise_level_bounds = (1e-10, 1e+10)
+		self.normalize_y = True
+		self.model = GaussianProcessRegressor(kernel = self.kernel, alpha=self.alpha, n_restarts_optimizer=self.n_restarts, random_state=None, normalize_y=self.normalize_y)
 
-	def set_RBFkernel(self, multipleRBF, white_kernel, length_scale = 1.0e-10, length_scale_bounds=(1e-20, 1e+10)):
+	def set_RBFkernel(self, multipleRBF, white_kernel, length_scale = 1.0, length_scale_bounds=None):
+		if length_scale_bounds == None:
+			length_scale_bounds = self.length_scale_bounds
 		if self.train_X is None:
 			raise NotImplementedError("A training set must be initialized before scaling.")
 		if multipleRBF == True:
@@ -40,20 +45,33 @@ class GaussianProcessRegressionModel(BaseRegressionModel):
 		self._update_model()
 
 	def _update_model(self):
-		self.model = GaussianProcessRegressor(kernel = self.kernel, alpha = self.alpha, n_restarts_optimizer = self.n_restarts, random_state = None, normalize_y = False)
+		self.model = GaussianProcessRegressor(kernel = self.kernel, alpha = self.alpha, n_restarts_optimizer = self.n_restarts, random_state = None, normalize_y = self.normalize_y)
 
 	def set_alpha(self, noise_level):
 		self.alpha = noise_level ** 2
 		self._update_model()
+
+	def set_length_bounds(self, length_min, length_max):
+		self.length_scale_bounds = (length_min, length_max)
+#		self._update_model()
 	
 	def set_noise_bounds(self, noise_min, noise_max):
 		self.noise_level_bounds = (noise_min, noise_max)
 		self._update_model()
+	
+	def set_normalize_y(self, normalize_y: bool):
+		self.normalize_y = self.normalize_y
+		self._update_model()
 
+	def set_n_restarts(self, n_restarts):
+		self.n_restarts = n_restarts
+		self._update_model()
+	
 	def train(self):
 		super().train()
 		self.best_params = f"GPR with kernel {self.model.kernel_}"
 		st.warning(self.best_params)
+		st.warning(self.train_score)
 
 	def predict(self, X):
 		if self.model is None:
@@ -91,9 +109,11 @@ class GaussianProcessRegressionModel(BaseRegressionModel):
 	
 	@classmethod
 	def dictload(cls, document_id, collection_name="models"):
-		ml_dict = super().dictload(document_id)
-		if ml_dict:
-			data = ml_dict.__dict__.copy()
+		base_dict = BaseRegressionModel.dictload(document_id, collection_name)
+		if base_dict:
+			data = base_dict.copy()
 			data['kernel'] = cls.deserialize_kernel(data.get('kernel'))
 			return data
+		else:
+			print("Base_dict not detected")
 		return None

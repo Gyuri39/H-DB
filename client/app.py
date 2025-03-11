@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 #Import streamlit
 import streamlit as st
 st.set_page_config(
-	page_title = "Hydrogen DB",
+	page_title = "Web UI",
 	page_icon = "yin-yang",
 	layout = "wide"
 )
@@ -66,7 +66,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.2.1.1-beta</p>
+		<p style="font-size:15px:">Version 0.3.1.1-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>

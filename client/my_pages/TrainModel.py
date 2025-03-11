@@ -22,6 +22,8 @@ def createPage():
 		st.session_state.__LOADDATA_FLAG__ = False
 	if "Model" not in st.session_state:
 		st.session_state.Model = None
+	if "fit_button" not in st.session_state:
+		st.session_state.fit_button = None
 	con11 = st.columns([1.0])
 	con21, con22 = st.columns([0.5, 0.5])
 	model_option = ['Linear regression', 'Elastic net', 'Gaussian process regression']
@@ -121,31 +123,52 @@ def createPage():
 						model.set_scaler(scaling_chosen)
 						kernel_option = st.selectbox('Chosse the kernel option', ['Single', 'Multiple'], index=0)
 						whitekernel_option = st.selectbox('Choose the white kernel option', ['Use', 'Not use'], index=0)
-						n_restarts = st.number_input('Number of restarts of the optimizer', value=1, format="%d")
-						if kernel_option == 'Single':
-							yes_multiple = False
-							noise_std_model = st.number_input('Fix the noise level', value=1e-10, format="%e")
-							model.set_alpha(noise_std_model)
-						elif kernel_option == 'Multiple':
-							yes_multiple = True
-						else:
-							raise KeyError("Invalid kernel_option designation")
 						if whitekernel_option == 'Use':
 							yes_white = True
-							noise_min, noise_max = st.slider(
-								"Set white noise level bounds",
-								min_value=-20, max_value=20, value=(-10, 5), step=1, format="10^%d"
-							)
-							model.set_noise_bounds(10**noise_min, 10**noise_max)
 						elif whitekernel_option == 'Not use':
 							yes_white = False
 						else:
 							raise KeyError("Invalid whitekernel_option designation")
+						if kernel_option == 'Single':
+							yes_multiple = False
+						elif kernel_option == 'Multiple':
+							yes_multiple = True
+						else:
+							raise KeyError("Invalid kernel_option designation")
+						model.set_alpha((np.var(y_train).iloc[0] * 0.1) ** 0.5)
+						with st.expander("Advanced option"):
+							noise_option = st.selectbox("Choose the noise option", ['Auto', 'Manual', 'From data'], index=0)
+							if noise_option == 'Auto':
+								model.set_alpha((np.var(y_train).iloc[0] * 0.1) ** 0.5)
+								st.warning(f"noise level = {(np.var(y_train).iloc[0] * 0.01) ** 0.5}")
+							elif noise_option == 'Manual':
+								noise_std_model = st.number_input("Fix the noise level (>0)", value=1e-5, format="%e")
+								model.set_alpha(noise_std_model)
+							elif noise_option == 'From data':
+								st.warning("Under develop")
+							else:
+								raise ValueError("Invalid noise option")
+							if whitekernel_option == 'Use':
+								noise_min, noise_max = st.slider(
+									"Set white noise level bounds",
+									min_value=-20, max_value=20, value=(-10, 5), step=1, format="10^%d"
+								)
+								model.set_noise_bounds(10**noise_min, 10**noise_max)
+							n_restarts = st.number_input('Number of restarts of the optimizer', value=10, format="%d")
+							model.set_n_restarts(n_restarts)
+							normalize_y = st.checkbox("Normalize the target value", value=True)
+							model.set_normalize_y(normalize_y)
 						model.set_RBFkernel(yes_multiple, yes_white)
 					else:
 						raise KeyError("Invalid model designation")
 					#Train
-					if st.checkbox("Fit with the above setting"):
+					fit_button_clicked = st.button("Fit with the above setting")
+					if fit_button_clicked:
+						if st.session_state.fit_button == True:
+							st.session_state.fit_button = False
+						else:
+							st.session_state.fit_button = True
+					if st.session_state.fit_button == True:
 						model.train()
 						st.success("Model is successfully trained.")
 						st.session_state.Model = model

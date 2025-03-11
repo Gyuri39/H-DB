@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from thefuzz import process
-from client.utils import KEY_PROPERTY
+from client.utils import HYDROGEN_DICT
 
 def candidate_columns(df: pd.DataFrame, key_cols: list, threshold=80):
 	"""
@@ -27,7 +27,7 @@ def candidate_columns(df: pd.DataFrame, key_cols: list, threshold=80):
 		key_cols_tmp = key_cols
 	
 	# Remove matching to unwanted KEY features
-	unwanted_colnames = [item for item in KEY_PROPERTY if item not in key_cols]
+	unwanted_colnames = [item for item in HYDROGEN_DICT if item not in key_cols]
 	col_list = [item for item in col_list if item not in unwanted_colnames]
 
 

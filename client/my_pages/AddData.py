@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from pathlib import Path
-from utils import DATA_DIR, MATERIAL_LIST, PROPERTY_DICT, METHOD_LIST, KEY_PROPERTY, VALID_DATA_FORMAT, convert_to_dataframe
+from utils import DATA_DIR, MATERIAL_LIST, PROPERTY_DICT, METHOD_LIST, HYDROGEN_DICT, VALID_DATA_FORMAT, convert_to_dataframe
 from server.data.db_handler import make_DWD, save_DWD
 from server.data.utils import candidate_columns
 
@@ -18,9 +18,9 @@ def createPage():
 	with con12:
 		if uploaded_file:
 			material = st.selectbox("*Material", MATERIAL_LIST, index=None)
-			hydrogen = st.selectbox("*Form of Hydrogen", KEY_PROPERTY.keys(), index=None)
+			hydrogen = st.selectbox("*Form of Hydrogen", HYDROGEN_DICT.keys(), index=None)
 			if hydrogen:
-				st.html(KEY_PROPERTY[hydrogen])
+				st.html(HYDROGEN_DICT[hydrogen])
 			attribute = st.selectbox("*Property", PROPERTY_DICT.keys(), index=None)
 			if attribute:
 				st.html(PROPERTY_DICT[attribute])
