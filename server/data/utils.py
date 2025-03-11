@@ -22,7 +22,7 @@ def candidate_columns(df: pd.DataFrame, key_cols: list, threshold=80):
 			matched_cols.add('TEMP')
 			if match != 'TEMP':
 				to_suggest = True
-		key_cols_tmp = [item for item in key_cols if item is not 'TEMP']
+		key_cols_tmp = [item for item in key_cols if item != 'TEMP']
 	else:
 		key_cols_tmp = key_cols
 	
