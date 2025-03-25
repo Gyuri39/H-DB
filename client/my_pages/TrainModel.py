@@ -29,6 +29,7 @@ def createPage():
 	model_option = ['Linear regression', 'Elastic net', 'Gaussian process regression']
 	scaling_option = ['None', 'Standardization', 'Normalization [Min-Max]']
 
+	transform_options = ['linear', 'log', 'log10', 'reciprocal']
 	scale_options = ['Linear', 'Logarithmic', 'Reciprocal']
 	register_scale(ReciprocalScale)
 
@@ -90,16 +91,25 @@ def createPage():
 					st.error("The target is already incorporated in the features.")
 				else:
 					X_train = df[features]
-					y_train = df[[target]]
+					#y_train = df[[target]]
+					y_train = df[target]
 					st.success("Training data prepared.")
 
 					model_chosen = st.selectbox('Select regression model', model_option, index=2)
+					feature_transform = ["linear"] * len(features)
+					target_transform = "linear"
+					with st.expander("Data transform option"):
+						for i, feature in enumerate(features):
+							feature_transform[i] = st.selectbox(f"Feature **{feature}**", transform_options, index=0)
+						target_transform = st.selectbox(f"Target **{target}**", transform_options, index=0)
 					scaling_chosen = st.selectbox('Select data scaling option', scaling_option, index=2)
+
 					#Linear regression model
 					if model_chosen == model_option[0]:
 						model = LinearRegressionModel()
 						st.write(model.description)
 						model.set_data(X_train, y_train)
+						model.set_transform(feature_transform, target_transform)
 						model.set_scaler(scaling_chosen)
 						degree = st.number_input('polynomial degree of the model:', value=1, format="%d")
 						model.set_degree(degree)
@@ -108,6 +118,7 @@ def createPage():
 						model = ElasticNetModel()
 						st.write(model.description)
 						model.set_data(X_train, y_train)
+						model.set_transform(feature_transform, target_transform)
 						model.set_scaler(scaling_chosen)
 						degree = st.number_input('polynomial degree of the model:', value=1, format="%d")
 						alpha = st.number_input('Penalty term $alpha$', value=1e-10, format="%.3e")
@@ -120,6 +131,7 @@ def createPage():
 						model = GaussianProcessRegressionModel()
 						st.write(model.description)
 						model.set_data(X_train, y_train)
+						model.set_transform(feature_transform, target_transform)
 						model.set_scaler(scaling_chosen)
 						kernel_option = st.selectbox('Chosse the kernel option', ['Single', 'Multiple'], index=0)
 						whitekernel_option = st.selectbox('Choose the white kernel option', ['Use', 'Not use'], index=0)
@@ -135,12 +147,15 @@ def createPage():
 							yes_multiple = True
 						else:
 							raise KeyError("Invalid kernel_option designation")
-						model.set_alpha((np.var(y_train).iloc[0] * 0.1) ** 0.5)
+						#model.set_alpha((np.var(y_train).iloc[0] * 0.1) ** 0.5)
+						TMP_X_train_transformed = model.apply_transformation(X_train, feature_transform).squeeze()
+						alpha_for_transformed = (np.var(TMP_X_train_transformed) * 0.1) ** 0.5
+						model.set_alpha(alpha_for_transformed)
 						with st.expander("Advanced option"):
 							noise_option = st.selectbox("Choose the noise option", ['Auto', 'Manual', 'From data'], index=0)
 							if noise_option == 'Auto':
-								model.set_alpha((np.var(y_train).iloc[0] * 0.1) ** 0.5)
-								st.warning(f"noise level = {(np.var(y_train).iloc[0] * 0.01) ** 0.5}")
+								model.set_alpha(alpha_for_transformed)
+								st.warning(f"noise level = {alpha_for_transformed}")
 							elif noise_option == 'Manual':
 								noise_std_model = st.number_input("Fix the noise level (>0)", value=1e-5, format="%e")
 								model.set_alpha(noise_std_model)
@@ -205,9 +220,9 @@ def createPage():
 					y_train_predicted, ystd_train_predicted = model.predict(model.train_X)
 					sorted_indices = np.argsort(model.train_X[Xoption])
 					sorted_X = model.train_X[Xoption][sorted_indices]
-					sorted_y_predicted = y_train_predicted[sorted_indices]
-					sorted_ystd_predicted = ystd_train_predicted[sorted_indices]
-					ax.errorbar(sorted_X, sorted_y_predicted, yerr=sorted_ystd_predicted, color='blue', alpha=0.3)
+					sorted_y_predicted = y_train_predicted.iloc[sorted_indices]
+					sorted_ystd_predicted = ystd_train_predicted.iloc[sorted_indices]
+					ax.errorbar(sorted_X, sorted_y_predicted.squeeze(), yerr=sorted_ystd_predicted.squeeze(), color='blue', alpha=0.3)
 				# no deviations
 				elif model._yes_dev is False:
 					y_train_predicted = model.predict(model.train_X)

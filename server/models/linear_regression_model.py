@@ -27,17 +27,20 @@ class LinearRegressionModel(BaseRegressionModel):
 			raise NotImplementedError("A training set must be initialized before training.")
 		elif self.scaler is None:
 			raise NotImplementedError("A scaler must be initialized before training.")
-		X_train_poly = self.poly.fit_transform(self.scaler.transform(self.train_X))
-		self.model.fit(X_train_poly, self.train_y)
-		self.train_score = self.model.score(X_train_poly, self.train_y)
+		X_train_poly = self.poly.fit_transform(self.scaler.transform(self.apply_transformation(self.train_X, self.feature_transform)))
+		y_train = self.apply_transformation(self.train_y, self.target_transform)
+		self.model.fit(X_train_poly, y_train)
+		self.train_score = self.model.score(X_train_poly, y_train)
 
 		feature_names = [f"x{i+1}" for i in range(self.scaler.n_features_in_)]
 		poly_feature_names = self.poly.get_feature_names_out(feature_names)
 		coefficients = self.model.coef_
 		intercept = self.model.intercept_
 		terms = [f"{coefficients[0][i]:.3E} * {poly_feature_names[i]}" for i in range(len(coefficients[0]))]
+		#terms = [f"{coefficients[i]:.3E} * {poly_feature_names[i]}" for i in range(len(coefficients))]
 		equation = " + ".join(terms)
 		equation = f"{intercept[0]:.3E} + {equation}"
+		#equation = f"{intercept:.3E} + {equation}"
 		self.best_params = equation
 		st.warning(self.best_params)
 
@@ -45,9 +48,10 @@ class LinearRegressionModel(BaseRegressionModel):
 		if self.model is None:
 			raise NotImplementedError("A model must be initilalized before predicting.")
 
-		X_scaled = self.scaler.transform(X)
+		X_scaled = self.scaler.transform(self.apply_transformation(X, self.feature_transform))
 		X_test_poly = self.poly.transform(X_scaled)
-		return self.model.predict(X_test_poly)
+		y_pred = self.model.predict(X_test_poly)
+		return self.inverse_transformation(y_pred, self.target_transform)
 
 	def serialize_poly(self):
 		poly_buffer = BytesIO()
@@ -109,7 +113,8 @@ class ElasticNetModel(LinearRegressionModel):
 			raise NotImplementedError("A training set must be initialized before training.")
 		elif self.scaler is None:
 			raise NotImplementedError("A scaler must be initialized before training.")
-		X_train_poly = self.poly.fit_transform(self.scaler.transform(self.train_X))
+		X_train_poly = self.poly.fit_transform(self.scaler.transform(self.apply_transformation(self.train_X,self.feature_transform)))
+		y_train = self.apply_transformation(self.train_y, self.target_transform)
 #		if self._yes_gridcv == True or len(self.param_grid['alpha']) >1 or len(self.param_grid['l1_ratio']) >1:
 		if self._yes_gridcv == True:
 			grid_search = self.grid_search
@@ -119,7 +124,7 @@ class ElasticNetModel(LinearRegressionModel):
 			self.alpha, self.l1_ratio = grid_search.best_params_['alpha'], grid_search.best_params_['l1_ratio']
 		
 		else:
-			self.model.fit(X_train_poly, self.train_y)
+			self.model.fit(X_train_poly, y_train)
 		feature_names = [f"x{i+1}" for i in range(self.scaler.n_features_in_)]
 		poly_feature_names = self.poly.get_feature_names_out(feature_names)
 		coefficients = self.model.coef_

@@ -76,10 +76,12 @@ class GaussianProcessRegressionModel(BaseRegressionModel):
 	def predict(self, X):
 		if self.model is None:
 			raise NotImplementedError("A model must be initialized before predicting.")
-		X_test = self.scaler.transform(X)
+		X_test = self.scaler.transform(self.apply_transformation(X, self.feature_transform))
 		pred_result = self.model.predict(X_test, return_std=True)
 		if isinstance(pred_result, tuple) and len(pred_result) == 2:
-			return pred_result
+			returned_prediction = self.inverse_transformation(pred_result[0], self.target_transform)
+			returned_prederr = self.inverse_error_transformation(returned_prediction, pred_result[1], self.target_transform)
+			return returned_prediction, returned_prederr
 		else:
 			raise ValueError(f"Unexpected output from predict(): {pred_result}")
 

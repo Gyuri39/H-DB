@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from pathlib import Path
-from utils import DATA_DIR, MATERIAL_LIST, PROPERTY_DICT, METHOD_LIST, HYDROGEN_DICT, VALID_DATA_FORMAT, convert_to_dataframe
+from utils import DATA_DIR, MATERIAL_LIST, PROPERTY_DICT, METHOD_LIST, DATA_TYPE_LIST, HYDROGEN_DICT, VALID_DATA_FORMAT, convert_to_dataframe
 from server.data.db_handler import make_DWD, save_DWD
 from server.data.utils import candidate_columns
 
@@ -25,6 +25,7 @@ def createPage():
 			if attribute:
 				st.html(PROPERTY_DICT[attribute])
 			method = st.selectbox("*Method", METHOD_LIST, index=None)
+			data_type = st.selectbox("*Data type", DATA_TYPE_LIST, index=None)
 			uploader = st.session_state.name
 			information_source = st.text_input("*Information source by DOI, web address, thesis title, etc.")
 			who_measured = st.text_input("*The one who measured or evaluated")
@@ -32,7 +33,7 @@ def createPage():
 			pretreatment = st.text_input("Pre-treatment information")
 			method_detail = st.text_input("Method in detail")
 			description_else = st.text_input("Anything else")
-			if not material or not hydrogen or not attribute or not method or not information_source or not who_measured:
+			if not material or not hydrogen or not attribute or not method or not data_type or not information_source or not who_measured:
 				st.warning("It is mandatory to select the options or fill in the information which begin with '*'.")
 			else:
 				key_col = ['TEMP', hydrogen]
@@ -98,7 +99,7 @@ def createPage():
 				save_button = st.button("Save the data on the server.")
 
 			if save_button == True:
-				DWD = make_DWD(material, hydrogen, attribute, method, uploader, df_suggest, information_source, who_measured, purity, pretreatment, method_detail, description_else)
+				DWD = make_DWD(material, hydrogen, attribute, method, uploader, df_suggest, data_type, information_source, who_measured, purity, pretreatment, method_detail, description_else)
 				save_DWD(DWD)
 			
 		else:

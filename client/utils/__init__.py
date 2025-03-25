@@ -12,7 +12,7 @@ MATERIAL_LIST = ["bcc-W",
 					"bcc-Nb",
 					"bcc-Fe",
 					"fcc-Cu",
-		 			"fcc-Ni",
+					"fcc-Ni",
 					"hcp-Zr",
 					"SS304",
 					"SS316",
@@ -27,10 +27,15 @@ PROPERTY_DICT = {"Diffusivity": "diffusion coefficient in m<sup>2</sup> s<sup>-1
 					}
 METHOD_LIST = ["Experiment", "Simulation", "Theory/Model"]
 
+DATA_TYPE_LIST = ["Raw data", "From fitted curve"]
+
 HYDROGEN_DICT = {"H": "hydrogen atom", "D": "deuterium atom", "T": "tritium atom",
 					"H2": "H2 molecule", "D2": "D2 molecule", "T2": "T2 molecule",
 					"HD": "HD molecule", "DT": "DT molecule", "HT": "HT molecule",
 					"else": "Combination, no information, etc."}	# TEMP(temperature) is regarded as the common information
+
+HYDROGEN_GROUP = {"all isotope atoms": ["H", "D", "T"],
+					"all isotope molecules": ["H2", "D2", "T2", "HD", "DT", "HT"]}
 
 VALID_DATA_FORMAT = ['csv', 'txt', 'xls', 'xlsx']
 
@@ -67,7 +72,12 @@ def filter_filelist(collection_name="datasets", material=None, hydrogen=None, at
 		if material_filter:
 			query = query.where(filter=firestore.FieldFilter("material", "==", material_filter))
 		if hydrogen_filter:
-			query = query.where(filter=firestore.FieldFilter("hydrogen", "==", hydrogen_filter))
+			if hydrogen_filter in HYDROGEN_DICT.keys():
+				query = query.where(filter=firestore.FieldFilter("hydrogen", "==", hydrogen_filter))
+			elif hydrogen_filter in HYDROGEN_GROUP.keys():
+				query = query.where("hydrogen", "in", HYDROGEN_GROUP[hydrogen_filter])
+			else:
+				query = query
 		if attribute_filter:
 			query = query.where(filter=firestore.FieldFilter("attribute", "==", attribute_filter))
 		if method_filter:
@@ -89,10 +99,11 @@ def filter_filelist(collection_name="datasets", material=None, hydrogen=None, at
 		material_filter = st.selectbox("Filter by material", MATERIAL_LIST, index=find_index(material, MATERIAL_LIST))
 	else:
 		material_filter = st.selectbox("Filter by material", MATERIAL_LIST, index=None)
+	hydrogen_filter_list = list(HYDROGEN_DICT.keys()) + list(HYDROGEN_GROUP.keys())
 	if hydrogen:
-		hydrogen_filter = st.selectbox("Filter by hydrogen", HYDROGEN_DICT.keys(), index=find_index(hydrogen, HYDROGEN_DICT.keys()))
+		hydrogen_filter = st.selectbox("Filter by hydrogen", hydrogen_filter_list, index=find_index(hydrogen, hydrogen_filter_list))
 	else:
-		hydrogen_filter = st.selectbox("Filter by hydrogen", HYDROGEN_DICT.keys(), index=None)
+		hydrogen_filter = st.selectbox("Filter by hydrogen", hydrogen_filter_list, index=None)
 	if attribute:
 		attribute_filter = st.selectbox("Filter by property", PROPERTY_DICT.keys(), index=find_index(attribute, PROPERTY_DICT.keys()))
 	else:

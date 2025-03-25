@@ -19,6 +19,7 @@ class DataWithDescription:
 	date: str
 	uploader: str
 	data: pd.DataFrame
+	data_type: str
 	information_source: str
 	who_measured: str
 	descript_purity: str
@@ -27,10 +28,10 @@ class DataWithDescription:
 	descript_else: str
 	who_verified: dict
 
-def make_DWD(material, hydrogen, attribute, method, uploader, data, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else) -> DataWithDescription:
+def make_DWD(material, hydrogen, attribute, method, uploader, data, data_type, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else) -> DataWithDescription:
 	now = datetime.now()
 	date = now.strftime("%Y-%m-%d_%H-%M-%S")
-	return DataWithDescription(material, hydrogen, attribute, method, date, uploader, data, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else, who_verified={})
+	return DataWithDescription(material, hydrogen, attribute, method, date, uploader, data, data_type, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else, who_verified={})
 
 def modify_DWD(DWD: DataWithDescription, which2mod, how2mod) -> DataWithDescription:
 	if hasattr(DWD, which2mod):
@@ -56,8 +57,6 @@ def save_DWD(DWD: DataWithDescription, collection_name="datasets"):
 	if DWD.material == None or DWD.hydrogen == None or DWD.attribute == None or DWD.method == None:
 		st.warning("Necessary attributes are not properly implemented.")
 		return False
-	print(f"DWD material: {DWD.material}")
-	print(type(DWD))
 	query = (
 		collection_ref
 		.where(filter=firestore.FieldFilter("material", "==", DWD.material))
@@ -66,7 +65,6 @@ def save_DWD(DWD: DataWithDescription, collection_name="datasets"):
 		.where(filter=firestore.FieldFilter("method", "==", DWD.method))
 	)
 	docs = query.stream()
-	print(type(docs))
 	existing_docs = list(docs)
 
 	if existing_docs:
@@ -86,6 +84,7 @@ def save_DWD(DWD: DataWithDescription, collection_name="datasets"):
 		"attribute": DWD.attribute,
 		"method": DWD.method,
 		"date": DWD.date,
+		"data_type": DWD.data_type,
 		"uploader": DWD.uploader,
 		"information_source": DWD.information_source,
 		"who_measured": DWD.who_measured,
@@ -117,6 +116,7 @@ def load_DWD(doc_id, collection_name="datasets"):
 		date = data["date"],
 		uploader = data["uploader"],
 		data = df,
+		data_type = data["data_type"],
 		information_source = data["information_source"],
 		who_measured = data["who_measured"],
 		descript_purity = data["descript_purity"],

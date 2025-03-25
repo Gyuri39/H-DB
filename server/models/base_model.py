@@ -35,7 +35,87 @@ class BaseRegressionModel:
 		self.best_params = None
 		self.train_score = None
 		self.test_score = None
+		self.feature_transform = None
+		self.target_transform = None
+
+	def apply_transformation(self, data, transform_types):
+		transformed_data = data.copy()
+		if isinstance(transformed_data, pd.Series):
+			transformed_data = transformed_data.to_frame()
+		for i, transform_type in enumerate(transform_types):
+			if transform_type == "linear":
+				continue
+			elif transform_type == "log":
+				transformed_data.iloc[:,i] = np.log(transformed_data.iloc[:,i])
+			elif transform_type == "log10":
+				transformed_data.iloc[:,i] = np.log10(transformed_data.iloc[:,i])
+			elif transform_type == "reciprocal":
+				transformed_data.iloc[:,i] = 1.0/transformed_data.iloc[:,i]
+			else:
+				raise ValueError(f"Unsupported transformation: {transform_type}")
+		return transformed_data
+
+	def inverse_transformation(self, data, transform_types):
+		transformed_data = data.copy()
+		if isinstance(transformed_data, np.ndarray):
+			transformed_data = pd.DataFrame(transformed_data)
+		if isinstance(transformed_data, pd.Series):
+			transformed_data = transformed_data.to_frame()
+		for i, transform_type in enumerate(transform_types):
+			if transform_type == "linear":
+				continue
+			elif transform_type == "log":
+				transformed_data.iloc[:,i] = np.exp(transformed_data.iloc[:,i])
+			elif transform_type == "log10":
+				transformed_data.iloc[:,i] = np.power(10, transformed_data.iloc[:,i])
+			elif transform_type == "reciprocal":
+				transformed_data.iloc[:,i] = 1.0/transformed_data.iloc[:,i]
+			else:
+				raise ValueError(f"Unsupported transformation: {transform_type}")
+		return transformed_data
+
+	def apply_error_transformation(self, data, errdata, transform_types):
+		transformed_errdata = errdata.copy()
+		if isinstance(transformed_errdata, pd.Series):
+			transformed_errdata = transformed_errdata.to_frame()
+		if isinstance(data, pd.Series):
+			data = data.to_frame()
+		for i, transform_type in enumerate(transform_types):
+			if transform_type == "linear":
+				continue
+			elif transform_type == "log":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] / abs(data.iloc[:,i])
+			elif transform_type == "log10":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] / (abs(data.iloc[:,i]) * np.log(10))
+			elif transform_type == "reciprocal":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] / (data.iloc[:,i]**2)
+			else:
+				raise ValueError(f"Unsupported transformation: {transform_type}")
+		return transformed_errdata
 	
+	def inverse_error_transformation(self, data, errdata, transform_types):
+		transformed_errdata = errdata.copy()
+		if isinstance(transformed_errdata, np.ndarray):
+			transformed_errdata = pd.DataFrame(transformed_errdata)
+		if isinstance(transformed_errdata, pd.Series):
+			transformed_errdata = transformed_errdata.to_frame()
+		if isinstance(data, np.ndarray):
+			data = pd.DataFrame(data)
+		if isinstance(data, pd.Series):
+			data = data.to_frame()
+		for i, transform_type in enumerate(transform_types):
+			if transform_type == "linear":
+				continue
+			elif transform_type == "log":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] * abs(data.iloc[:,i])
+			elif transform_type == "log10":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] * abs(data.iloc[:,i]) * np.log(10)
+			elif transform_type == "reciprocal":
+				transformed_errdata.iloc[:,i] = transformed_errdata.iloc[:,i] * (data.iloc[:,i] ** 2)
+			else:
+				raise ValueError(f"Unsupported transformation: {transform_type}")
+		return transformed_errdata
+
 	def set_training_info(self, description:str):
 		self.training_info = description
 
@@ -46,17 +126,30 @@ class BaseRegressionModel:
 		self.train_X = train_X
 		self.train_y = train_y
 	
+	def set_transform(self, feature_transform=None, target_transform="linear"):
+		if feature_transform is None:
+			feature_transform = ["linear"] * self.train_X.shape[1]
+		if len(feature_transform) != self.train_X.shape[1]:
+			raise ValueError("len(feature_transform) is not equal to the number of features.")
+		self.feature_transform = feature_transform
+		self.target_transform = [target_transform]
+		
 	def set_scaler(self, scaler_name):
 		if self.train_X is None:
 			raise NotImplementedError("A training set must be initialized before scaling.")
+		elif self.feature_transform is None:
+			raise NotImplementedError("Feature transform must be initialized before scaling.")
+		else:
+			X_transformed = self.apply_transformation(self.train_X, self.feature_transform)
+
 		if scaler_name.startswith("Standard"):	#Standardize
-			self.scaler = StandardScaler().fit(self.train_X)
+			self.scaler = StandardScaler().fit(X_transformed)
 		elif scaler_name.startswith("Normal"):	#Min-Max Scale or Normalize
-			self.scaler = MinMaxScaler().fit(self.train_X)
+			self.scaler = MinMaxScaler().fit(X_transformed)
 		elif scaler_name == "None": #No Scaling
-			scaler = StandardScaler().fit(self.train_X)
-			scaler.mean_ = np.zeros(self.train_X.shape[1])
-			scaler.scale_ = np.ones(self.train_X.shape[1])
+			scaler = StandardScaler().fit(X_transformed)
+			scaler.mean_ = np.zeros(X_transformed.shape[1])
+			scaler.scale_ = np.ones(X_transformed.shape[1])
 			self.scaler = scaler
 		else:
 			raise KeyError("Invalid scaler import trial")
@@ -72,21 +165,23 @@ class BaseRegressionModel:
 			raise NotImplementedError("A training set must be initialized before training.")
 		elif self.scaler is None:
 			raise NotImplementedError("A scaler must be initialized before training.")
-		X_train = self.scaler.transform(self.train_X)
+		X_train = self.scaler.transform(self.apply_transformation(self.train_X, self.feature_transform))
+		y_train = self.apply_transformation(self.train_y, self.target_transform)
 		if self._yes_gridcv:
 			grid_search.fit(self.train_X, self.train_y)
 			self.model = grid_search.best_estimator_
 			self.best_params = grid_search.best_params_
 			self.train_score = grid_search.best_score_
 		else:
-			self.model.fit(X_train, self.train_y)
-			self.train_score = self.model.score(X_train, self.train_y)
+			self.model.fit(X_train, y_train)
+			self.train_score = self.model.score(X_train, y_train)
 
 	def predict(self, X):
 		if self.model is None:
 			raise NotImplementedError("A model must be initilized before predicting.")
-		X_test = self.scaler.transform(X)
-		return self.model.predict(X_test)
+		X_test = self.scaler.transform(self.apply_transformation(X, self.feature_transform))
+		y_pred = self.model.predict(X_test)
+		return self.inverse_transformation(y_pred, self.target_transform)
 
 	def print_model_info(self):
 		string = ""
@@ -121,6 +216,8 @@ class BaseRegressionModel:
 			'class': self.class_name,
 			'name': self.name,
 			'description': self.description,
+			'feature_transform': self.feature_transform,
+			'target_transform': self.target_transform,
 			'model': self.serialize_model(),
 			'train_X': df2csv(self.train_X),
 			'train_y': df2csv(self.train_y),
