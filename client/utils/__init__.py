@@ -12,6 +12,7 @@ MATERIAL_LIST = ["bcc-W",
 					"bcc-Nb",
 					"bcc-Fe",
 					"fcc-Cu",
+					"fcc-Ni",
 					"hcp-Zr",
 					"SS304",
 					"SS316",
@@ -25,6 +26,8 @@ PROPERTY_DICT = {"Diffusivity": "diffusion coefficient in m<sup>2</sup> s<sup>-1
 					"Heat capacity": "Cp in J K<sup>-1</sup> mol<sup>-1</sup>"
 					}
 METHOD_LIST = ["Experiment", "Simulation", "Theory/Model"]
+
+DATA_TYPE_LIST = ["Raw data", "From fitted curve"]
 
 HYDROGEN_DICT = {"H": "hydrogen atom", "D": "deuterium atom", "T": "tritium atom",
 					"H2": "H2 molecule", "D2": "D2 molecule", "T2": "T2 molecule",
