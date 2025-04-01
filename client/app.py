@@ -66,7 +66,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.3.3.1-beta</p>
+		<p style="font-size:15px:">Version 0.3.4.0-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
@@ -77,10 +77,10 @@ def show_main_app():
 		""",
 		unsafe_allow_html=True
 		)
-		if st.checkbox("Change Password"):
-			PasswordResetWidget(st.session_state.authenticator)
-		else:
-			st.empty()
+		#if st.checkbox("Change Password"):
+		#	PasswordResetWidget(st.session_state.authenticator)
+		#else:
+		#	st.empty()
 
 
 
