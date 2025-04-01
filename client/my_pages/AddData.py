@@ -9,6 +9,32 @@ from server.data.utils import candidate_columns
 
 def createPage():
 	st.title("Add data")
+	with st.popover("Upload Guide"):
+		st.markdown("### Upload Guide ###")
+		st.markdown("*Upload a data with a proper format.")
+		st.markdown("**A csv file or excel/txt file that mimics the csv format can be uploaded.")
+		st.image("files/fig/add_data_fig_excel.png", caption="Upload format example")
+		st.markdown("(a) Property of **hydrogen (H)** along with **temperature (Temp)**")
+		st.markdown("(b) Error in **standard deviation** for both Temp **(Temp_std)** and H **(H_std)** in addition to (a)")
+		st.markdown("(c) Several columns in the raw data; will be **converted** to the proper format when uploading")
+		st.markdown("*Please carefully confirm before uploading the file if the conversion has been done as expected.")
+		with st.expander("See converted data"):
+			st.markdown("(a) and (b) are the perfectly fit format with the database")
+			st.image("files/fig/add_data_fig_a_converted.png", caption="(a) converted to as it is")
+			st.image("files/fig/add_data_fig_b_converted.png", caption="(b) converted to as it is")
+			st.markdown("(c) is not perfectly fit, but can be converted to a proper format")
+			st.image("files/fig/add_data_fig_c_converted.png", caption="H selected as the form of hydrogen")
+		st.markdown("*After uploading the file, choose/write appropriate attributes of that data.")
+		st.image("files/fig/add_data_fig_attributes.png", caption="Parts of mandatory input")
+		st.markdown("**Choose the Material; if there is not, please contact us.")
+		st.markdown("**Choose the Form of Hydrogen, either in isotope(atom) of isotopologue(molecule).")
+		st.markdown("**Choose the Property. Be careful of the unit.")
+		with st.expander("Unit of each property"):
+			for prop in PROPERTY_DICT:
+				st.html(f"{prop} : {PROPERTY_DICT[prop]}")
+		st.markdown("**Choose the Method the data was obtained, by experiment, simulation, or theory/model")
+		st.markdown("**Choose the Data type in which the data is obtained, either as the raw data itself or from fitted curve.")
+
 	con11, con12 = st.columns([0.5, 0.5])
 	uploaded_file = st.file_uploader("Choose a file to upload", type = VALID_DATA_FORMAT, accept_multiple_files = False)
 	to_suggest = None
