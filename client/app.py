@@ -42,9 +42,11 @@ def show_login_page():
 		elif sub_menu == "Find ID/PW":
 			forgotten_info = st.selectbox("I want to find my ", ["Username", "Password"], index=None)
 			if forgotten_info == "Username":
-				ForgotUsernameWidget(st.session_state.authenticator)
+				st.warning("Under development")
+				#ForgotUsernameWidget(st.session_state.authenticator)
 			elif forgotten_info == "Password":
-				ForgotPasswordWidget(st.session_state.authenticator)
+				st.warning("Under development")
+				#ForgotPasswordWidget(st.session_state.authenticator)
 	elif main_menu == "Register":
 		st.title("Register to the system")
 		st.write("Your e-mail must be pre-registered.\nContact us for pre-registeration.")
