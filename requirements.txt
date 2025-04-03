@@ -21,7 +21,6 @@ fonttools==4.56.0
 future==1.0.0
 gitdb==4.0.12
 GitPython==3.1.44
-gmpy2==2.1.5
 google-api-core==2.24.1
 google-api-python-client==2.162.0
 google-auth==2.38.0
