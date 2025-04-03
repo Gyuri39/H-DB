@@ -6,7 +6,7 @@ from matplotlib.scale import register_scale
 from utils.graph_scale import ReciprocalScale
 import os
 from pathlib import Path
-from utils import DATA_DIR, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe
+from utils import DATA_DIR, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
 from server.data.db_handler import load_DWD, info_DWD
 from io import BytesIO
 
@@ -28,6 +28,7 @@ def createPage():
 	con21, con22 = st.columns([0.5, 0.5])
 	con31, con32 = st.columns([0.5, 0.5])
 	con4 = st.columns([1.0])
+	con5 = st.columns([1.0])
 	
 	with con11:
 		st.subheader("Filter data files on the server")
@@ -194,12 +195,24 @@ def createPage():
 					if st.button("Hide graph"):
 						st.session_state.__GRAPH_CREATED__ = False
 						st.rerun()
+
 					fig_download = st.download_button(
 						label = "Download figure",
 						data=buf,
 						file_name="figure.png",
 						mime="image/png"
-					)		
+					)	
 
 				else:
 					st.empty()
+
+		with con5[0]:
+			st.subheader("Download selected data")
+			if st.checkbox("Download selected data as a single excel file"):
+				dfs = []
+				for file_name in selected_options:
+					st.session_state.DataLabels.setdefault(file_name, file_name)
+					dfs.append({"df": info_DWD(load_DWD(file_name), 'data'), "name1": file_name, "name2": st.session_state.DataLabels[file_name]})
+				create_excel_file(dfs)
+			else:
+				st.empty()
