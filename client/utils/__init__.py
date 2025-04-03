@@ -5,6 +5,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from .graph_scale import ReciprocalScale
 from firebase_admin import firestore
+import io
+import xlsxwriter
 
 DATA_DIR = "client/datas/"
 MODEL_DIR = "client/models/"
@@ -154,6 +156,38 @@ def save_csv_button(df: pd.DataFrame):
 		file_name='data.csv',
 		mime='text/csv'
 	)
+
+def create_excel_file(dfs: list):
+	# dfs must be a list of {'df': df, 'name1': 'filename', 'name2': 'user_defined_label'}
+	name2_list = [item['name2'] for item in dfs]
+	unique_name2 = set(name2_list)
+	duplicate_name2 = {name for name in unique_name2 if name2_list.count(name) > 1}
+	disable_name2 = len(duplicate_name2) > 0
+	if disable_name2:
+		options = ["data ID"]
+		st.warning("Duplicate labels in selected data are detected")
+	else:
+		options = ["data ID", "label"]
+	selected_option = st.radio("Choose the name of the individual sheet:", options, index=0, horizontal=True)
+	
+	buf = io.BytesIO()
+	with pd.ExcelWriter(buf, engine='xlsxwriter') as writer:
+		startcol = 0
+		sheet_name = "compilation"
+		worksheet = writer.book.add_worksheet(sheet_name)
+		for item in dfs:
+			df, name1, name2 = item['df'], item['name1'], item['name2']
+			writer.sheets[sheet_name] = worksheet
+			worksheet.write(0, startcol, name1)
+			worksheet.write(1, startcol, name2)
+			df.to_excel(writer, sheet_name=sheet_name, startcol=startcol, startrow=2, index=False)
+			startcol += df.shape[1] + 1
+		for item in dfs:
+			df, name1, name2 = item['df'], item['name1'], item['name2']
+			sheet_name_ind = name1 if selected_option == "data ID" else name2
+			df.to_excel(writer, sheet_name=sheet_name_ind, index=False)
+	buf.seek(0)
+	st.download_button(label="Download Excel", data=buf, file_name="compilation.xlsx", mime="application/vnd.openxmlformat-officedocument.spreadsheetml.sheet")
 
 def are_dataframes_equal(df1, df2, tolerance=0.05):	#'tolerance' relative tolerance and zero absolute tolerance
 	common_cols = sorted(set(df1.columns) & set(df2.columns))
