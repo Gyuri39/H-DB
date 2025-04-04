@@ -6,7 +6,7 @@ from matplotlib.scale import register_scale
 from utils.graph_scale import ReciprocalScale
 import os
 from pathlib import Path
-from utils import DATA_DIR, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
+from utils import DATA_DIR, PROPERTY_DICT, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
 from server.data.db_handler import load_DWD, info_DWD
 from io import BytesIO
 
