@@ -6,7 +6,7 @@ from matplotlib.scale import register_scale
 from utils.graph_scale import ReciprocalScale
 import os
 from pathlib import Path
-from utils import DATA_DIR, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
+from utils import DATA_DIR, PROPERTY_DICT, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
 from server.data.db_handler import load_DWD, info_DWD
 from io import BytesIO
 
@@ -62,7 +62,12 @@ def createPage():
 		if selected_options and last_selected:
 			dwd_object = load_DWD(last_selected)
 			st.success("Detailed information of selected data")
-			st.markdown(f"**{info_DWD(dwd_object, 'material')}, {info_DWD(dwd_object, 'hydrogen')}, {info_DWD(dwd_object, 'attribute')}, {info_DWD(dwd_object, 'method')}, {info_DWD(dwd_object, 'data_type')}**")
+			#st.markdown(f"**{info_DWD(dwd_object, 'material')}, {info_DWD(dwd_object, 'hydrogen')}, {info_DWD(dwd_object, 'attribute')}, {info_DWD(dwd_object, 'method')}, {info_DWD(dwd_object, 'data_type')}**")
+			st.markdown(f"Material: {info_DWD(dwd_object, 'material')}")
+			st.markdown(f"Hydrogen: {info_DWD(dwd_object, 'hydrogen')}")
+			st.html(f"Property: {info_DWD(dwd_object, 'attribute')} - {PROPERTY_DICT[info_DWD(dwd_object, 'attribute')]}")
+			st.markdown(f"Method: {info_DWD(dwd_object, 'method')}")
+			st.markdown(f"Data type: {info_DWD(dwd_object, 'data_type')}")
 			st.markdown(f"Uploaded by *{info_DWD(dwd_object, 'uploader')}* in {info_DWD(dwd_object, 'date')}")
 			st.markdown(f"Measured or Evaluated by {info_DWD(dwd_object, 'who_measured')}")
 			st.markdown(f"Information source: {info_DWD(dwd_object, 'information_source')}")
