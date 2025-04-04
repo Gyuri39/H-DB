@@ -65,7 +65,7 @@ def createPage():
 			#st.markdown(f"**{info_DWD(dwd_object, 'material')}, {info_DWD(dwd_object, 'hydrogen')}, {info_DWD(dwd_object, 'attribute')}, {info_DWD(dwd_object, 'method')}, {info_DWD(dwd_object, 'data_type')}**")
 			st.markdown(f"Material: {info_DWD(dwd_object, 'material')}")
 			st.markdown(f"Hydrogen: {info_DWD(dwd_object, 'hydrogen')}")
-			st.markdown(f"Property: {info_DWD(dwd_object, 'attribute')} - {PROPERTY_DICT[info_DWD(dwd_object, 'attribute')]}")
+			st.html(f"Property: {info_DWD(dwd_object, 'attribute')} - {PROPERTY_DICT[info_DWD(dwd_object, 'attribute')]}")
 			st.markdown(f"Method: {info_DWD(dwd_object, 'method')}")
 			st.markdown(f"Data type: {info_DWD(dwd_object, 'data_type')}")
 			st.markdown(f"Uploaded by *{info_DWD(dwd_object, 'uploader')}* in {info_DWD(dwd_object, 'date')}")
