@@ -2,6 +2,8 @@ altair==5.5.0
 attrs==25.1.0
 bcrypt==4.3.0
 blinker==1.9.0
+boto3==1.26.135
+botocore==1.29.135
 Brotli==1.1.0
 CacheControl==0.14.2
 cachetools==5.5.2
@@ -40,6 +42,7 @@ hyperframe==6.0.1
 idna==3.10
 importlib_resources==6.4.5
 Jinja2==3.1.5
+jmespath==1.0.1
 joblib==1.4.2
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -89,6 +92,7 @@ rpds-py==0.23.1
 rsa==4.9
 ruamel.yaml==0.18.6
 ruamel.yaml.clib==0.2.8
+s3transfer==0.6.2
 scikit-learn==1.6.1
 scipy==1.15.2
 setuptools==75.8.0
@@ -110,7 +114,7 @@ typing_extensions==4.12.2
 tzdata==2025.1
 uncertainties==3.2.2
 uritemplate==4.1.1
-urllib3==2.3.0
+urllib3==1.26.20
 watchdog==6.0.0
 wheel==0.45.1
 xlrd==2.0.1
