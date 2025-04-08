@@ -7,7 +7,8 @@ from utils.graph_scale import ReciprocalScale
 import os
 from pathlib import Path
 from utils import DATA_DIR, PROPERTY_DICT, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
-from server.data.db_handler import load_DWD, info_DWD
+from server.data.firestore_handler import load_DWD, info_DWD
+from server.data.backblaze_handler import generate_presigned_url
 from io import BytesIO
 
 def createPage():
@@ -55,6 +56,12 @@ def createPage():
 				with st.expander("See dataframe"):
 					st.dataframe(info_DWD(dwd_object, 'data').style.format("{:.3e}"), width=1000)
 				save_csv_button(info_DWD(dwd_object, 'data'))
+				if dwd_object.pdf_flag == True:
+					if st.button("Open attached pdf file for detailed explanation"):
+						pdf_url = generate_presigned_url(dwd_object.date + '.pdf')
+						#st.markdown(f'<embed src="{pdf_url}" width="100%" height="800px" type="application/pdf">', unsafe_allow_html=True)
+						js = f'<script> window.open("{pdf_url}", "_blank"); </script>'
+						st.components.v1.html(js)
 		else:
 			st.empty()
 
@@ -112,12 +119,6 @@ def createPage():
 			all_columns = list(all_columns)	
 			if dataframes:
 				tmpXindex = all_columns.index("TEMP") if "TEMP" in all_columns else 0
-#				tmpYindex = (
-#					all_columns.index("H") if "H" in all_columns
-#					else all_columns.index("D") if "D" in all_columns
-#					else all_columns.index("T") if "T" in all_columns
-#					else 1
-#				)
 				tmpYindex = (
 					"H" if "H" in all_columns
 					else "D" if "D" in all_columns
