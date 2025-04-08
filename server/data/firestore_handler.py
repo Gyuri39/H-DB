@@ -27,11 +27,12 @@ class DataWithDescription:
 	descript_methoddetail: str
 	descript_else: str
 	who_verified: dict
+	pdf_flag: bool
 
 def make_DWD(material, hydrogen, attribute, method, uploader, data, data_type, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else) -> DataWithDescription:
 	now = datetime.now()
 	date = now.strftime("%Y-%m-%d_%H-%M-%S")
-	return DataWithDescription(material, hydrogen, attribute, method, date, uploader, data, data_type, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else, who_verified={})
+	return DataWithDescription(material, hydrogen, attribute, method, date, uploader, data, data_type, information_source, who_measured, descript_purity, descript_pretreatment, descript_methoddetail, descript_else, who_verified={}, pdf_flag=False)
 
 def modify_DWD(DWD: DataWithDescription, which2mod, how2mod) -> DataWithDescription:
 	if hasattr(DWD, which2mod):
@@ -94,6 +95,7 @@ def save_DWD(DWD: DataWithDescription, collection_name="datasets"):
 		"descript_else": DWD.descript_else,
 		"who_verified": DWD.who_verified,
 		"data": serialized_data,
+		"pdf_flag": DWD.pdf_flag
 	})
 	st.success(f"The file {doc_id} is saved on the server")
 	return True
@@ -123,7 +125,8 @@ def load_DWD(doc_id, collection_name="datasets"):
 		descript_pretreatment = data["descript_pretreatment"],
 		descript_methoddetail = data["descript_methoddetail"],
 		descript_else = data["descript_else"],
-		who_verified = data["who_verified"]
+		who_verified = data["who_verified"],
+		pdf_flag = data["pdf_flag"]
 	)
 	return DWD
 
@@ -132,6 +135,8 @@ def info_DWD(DWD: DataWithDescription, info: str):
 		return DWD.data
 	elif info == 'who_verified':
 		return DWD.who_verified
+	elif info == 'pdf_flag':
+		return DWD.pdf_flag
 	elif info in DWD.__dataclass_fields__:
 		return str(getattr(DWD, info))
 	else:

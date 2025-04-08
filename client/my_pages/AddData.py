@@ -3,8 +3,10 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from pathlib import Path
+import tempfile
 from utils import DATA_DIR, MATERIAL_LIST, PROPERTY_DICT, METHOD_LIST, DATA_TYPE_LIST, HYDROGEN_DICT, VALID_DATA_FORMAT, convert_to_dataframe
-from server.data.db_handler import make_DWD, save_DWD
+from server.data.firestore_handler import make_DWD, save_DWD, modify_DWD
+from server.data.backblaze_handler import upload_pdf
 from server.data.utils import candidate_columns
 
 def createPage():
@@ -59,6 +61,7 @@ def createPage():
 			pretreatment = st.text_input("Pre-treatment information")
 			method_detail = st.text_input("Method in detail")
 			description_else = st.text_input("Anything else")
+			uploaded_pdf = st.file_uploader("Attach a pdf for detailed description", type = 'pdf', accept_multiple_files = False)
 			if not material or not hydrogen or not attribute or not method or not data_type or not information_source or not who_measured:
 				st.warning("It is mandatory to select the options or fill in the information which begin with '*'.")
 			else:
@@ -126,6 +129,11 @@ def createPage():
 
 			if save_button == True:
 				DWD = make_DWD(material, hydrogen, attribute, method, uploader, df_suggest, data_type, information_source, who_measured, purity, pretreatment, method_detail, description_else)
+				if uploaded_pdf:
+					modify_DWD(DWD, 'pdf_flag', True)
+					with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+						tmp.write(uploaded_pdf.read())
+						upload_pdf(tmp.name, DWD.date)
 				save_DWD(DWD)
 			
 		else:

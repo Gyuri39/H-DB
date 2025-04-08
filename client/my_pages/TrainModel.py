@@ -8,7 +8,7 @@ import numpy as np
 from datetime import datetime
 from pathlib import Path
 from utils import DATA_DIR, MODEL_DIR, filter_filelist
-from server.data.db_handler import info_DWD, load_DWD
+from server.data.firestore_handler import info_DWD, load_DWD
 from server.models import LinearRegressionModel, ElasticNetModel, GaussianProcessRegressionModel
 from io import BytesIO
 
