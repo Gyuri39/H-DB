@@ -100,11 +100,11 @@ def ForgotPasswordWidget(authenticator):
 	try:
 		(username_of_forgotten_password,
 			email_of_forgotten_password,
-			new_random_password) = authenticator.forgot_password(captcha = True)
+			new_random_password) = authenticator.forgot_password(captcha = True, send_email = True, two_factor_auth = True)
 		if username_of_forgotten_password:
 			st.success('New password sent securely')
 			upload_config(config_file)
-			st.warning(new_random_password)
+	#		st.warning(new_random_password)
 		elif not username_of_forgotten_password:
 			st.error('Username not found')
 	except ForgotError as e:

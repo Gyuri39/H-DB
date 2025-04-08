@@ -42,11 +42,11 @@ def show_login_page():
 		elif sub_menu == "Find ID/PW":
 			forgotten_info = st.selectbox("I want to find my ", ["Username", "Password"], index=None)
 			if forgotten_info == "Username":
-				st.warning("Under development")
-				#ForgotUsernameWidget(st.session_state.authenticator)
+				#st.warning("Under development")
+				ForgotUsernameWidget(st.session_state.authenticator)
 			elif forgotten_info == "Password":
-				st.warning("Under development")
-				#ForgotPasswordWidget(st.session_state.authenticator)
+				#st.warning("Under development")
+				ForgotPasswordWidget(st.session_state.authenticator)
 	elif main_menu == "Register":
 		st.title("Register to the system")
 		st.write("Your e-mail must be pre-registered.\nContact us for pre-registeration.")
@@ -109,11 +109,11 @@ def show_main_app():
 			orientation="horizontal"
 		)
 		if sub_menu == "Generate Model":
-#			st.warning("under development")
-			TrainModel.createPage()
+			st.warning("under maintenance")
+#			TrainModel.createPage()
 		elif sub_menu == "Apply Model":
-#			st.warning("under development")
-			TestModel.createPage()
+			st.warning("under maintenance")
+#			TestModel.createPage()
 	elif main_menu == "Option":
 			st.warning("under development")
 
