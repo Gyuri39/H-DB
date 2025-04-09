@@ -2,6 +2,7 @@ import boto3
 import streamlit as st
 from botocore.config import Config
 from botocore.exceptions import ClientError
+import re
 
 def get_b2_client():
 	b2 = st.secrets["b2"]
@@ -50,3 +51,23 @@ def generate_presigned_url(key, expiration_seconds = 3600):
 	except ClientError as ce:
 		print('error', ce)
 
+def upload_discussion_pdf(data_id:str, uploaded_pdf) -> int:
+	b2 = st.secrets["b2"]
+	b2_rw = get_b2_resource()
+	bucket = b2_rw.Bucket(b2["bucket_name"])
+	pattern = re.compile(f"^{re.escape(data_id)}-discussion_(\\d+)\\.pdf$")
+
+	new_Cpdf_id = 1
+	for obj in bucket.objects.all():
+		match = pattern.match(obj.key)
+		if match:
+			new_Cpdf_id += 1
+
+	new_filename = f"{data_id}-discussion_{new_Cpdf_id}.pdf"
+	try:
+		bucket.upload_fileobj(uploaded_pdf, new_filename)
+	except ClientError as ce:
+		st.error(f"File upload error: {ce}")
+		raise ce
+
+	return new_Cpdf_id

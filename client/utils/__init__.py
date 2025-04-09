@@ -148,13 +148,14 @@ def convert_to_dataframe(st_file):
 		st.error("Critical error: invalid format of input data")
 	return df
 
-def save_csv_button(df: pd.DataFrame):
+def save_csv_button(df: pd.DataFrame, use_container_width=False):
 	csv = df.to_csv(index=False).encode('utf-8')
 	st.download_button(
 		label="Download in CSV",
 		data=csv,
 		file_name='data.csv',
-		mime='text/csv'
+		mime='text/csv',
+		use_container_width=use_container_width
 	)
 
 def create_excel_file(dfs: list):

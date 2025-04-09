@@ -151,3 +151,59 @@ def are_dataframes_equal(df1, df2, tolerance=0.05): #'tolerance' relative tolera
 	if df1_sorted.shape != df2_sorted.shape:
 		return False
 	return np.allclose(df1_sorted, df2_sorted, rtol=tolerance, atol=0)
+
+@dataclass
+class CommentContainer:
+	id: int
+	username: str
+	content: str
+	timestamp: str
+	pdf_flag: bool
+	pdf_filename: str
+
+def save_CC(data_id: str, content:str, pdf_filename="", collection_name="discussion"):
+	if pdf_filename == "":
+		pdf_flag = False
+	else:
+		pdf_flag = True
+	db_client = firestore.client()
+	collection_ref = db_client.collection(collection_name)
+	for i in range(1,1000):
+		doc_id = f"{data_id}.{i}"
+		doc_ref = collection_ref.document(doc_id)
+		if not doc_ref.get().exists:
+			break
+
+	comment_data = CommentContainer(
+		id = i,
+		username = st.session_state.get("username", "unknown"),
+		content = content,
+		timestamp = datetime.now().strftime("%Y-%m-%d %H:%M"),
+		pdf_flag = bool(pdf_filename),
+		pdf_filename = pdf_filename
+	)
+
+	collection_ref.document(doc_id).set(comment_data.__dict__)
+	return True
+
+def load_CCs(data_id: str, collection_name: str = "discussion") -> list[CommentContainer]:
+	db_client = firestore.client()
+	collection_ref = db_client.collection(collection_name)
+	docs = collection_ref.stream()
+
+	comments = []
+	for doc in docs:
+		doc_id = doc.id
+		if doc_id.startswith(f"{data_id}."):
+			data = doc.to_dict()
+			comment = CommentContainer(
+				id = data["id"],
+				username = data["username"],
+				content = data["content"],
+				timestamp = data["timestamp"],
+				pdf_flag = data["pdf_flag"],
+				pdf_filename = data["pdf_filename"]
+			)
+			comments.append(comment)
+	comments.sort(key=lambda x: x.id, reverse=False)
+	return comments
