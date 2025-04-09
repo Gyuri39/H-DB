@@ -10,6 +10,7 @@ from utils import DATA_DIR, PROPERTY_DICT, VALID_DATA_FORMAT, filter_filelist, s
 from server.data.firestore_handler import load_DWD, info_DWD
 from server.data.backblaze_handler import generate_presigned_url
 from io import BytesIO
+import utils.discussion as discussion
 
 def createPage():
 	st.title("View Data")
@@ -55,13 +56,21 @@ def createPage():
 				dwd_object = load_DWD(last_selected)
 				with st.expander("See dataframe"):
 					st.dataframe(info_DWD(dwd_object, 'data').style.format("{:.3e}"), width=1000)
-				save_csv_button(info_DWD(dwd_object, 'data'))
-				if dwd_object.pdf_flag == True:
-					if st.button("Open attached pdf file for detailed explanation"):
-						pdf_url = generate_presigned_url(dwd_object.date + '.pdf')
-						#st.markdown(f'<embed src="{pdf_url}" width="100%" height="800px" type="application/pdf">', unsafe_allow_html=True)
-						js = f'<script> window.open("{pdf_url}", "_blank"); </script>'
-						st.components.v1.html(js)
+				con211, con212, con213 = st.columns([3,2,8])
+				with con211:
+					save_csv_button(info_DWD(dwd_object, 'data'), use_container_width=False)
+				with con212:
+					st.empty()
+				with con213:
+					if dwd_object.pdf_flag == True:
+						if st.button("Download the attached pdf file for detailed explanation", use_container_width=True):
+							pdf_url = generate_presigned_url(dwd_object.date + '.pdf')
+							js = f'<script> window.open("{pdf_url}", "_blank"); </script>'
+							st.components.v1.html(js)
+					else:
+						st.empty()
+				with st.popover("Open the discussion forum for the selected data", use_container_width=True):
+					discussion.commentlist(dwd_object.date)
 		else:
 			st.empty()
 
