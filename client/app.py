@@ -14,6 +14,7 @@ from streamlit_option_menu import option_menu
 from my_pages import ViewData, AddData, TrainModel, TestModel
 from server.login import OpenAuthenticator, LoginWidget, LogoutWidget, UserRegisterWidget, ForgotUsernameWidget, ForgotPasswordWidget, PasswordResetWidget
 import firebase_admin	# Firestore
+from utils.session import clear_previous_session 
 
 def show_login_page():
 	with st.sidebar:
@@ -21,6 +22,7 @@ def show_login_page():
 			icons=["person-circle", "person-plus"], menu_icon="key", default_index=0)
 		main_menu
 	if main_menu == "Login":
+		clear_previous_session("Login")
 		sub_menu = option_menu(
 			menu_title="Login",
 			options=["Sign in", "Find ID/PW"],
@@ -48,6 +50,7 @@ def show_login_page():
 				#st.warning("Under development")
 				ForgotPasswordWidget(st.session_state.authenticator)
 	elif main_menu == "Register":
+		clear_previous_session("Register")
 		st.title("Register to the system")
 		st.write("Your e-mail must be pre-registered.\nContact us for pre-registeration.")
 		UserRegisterWidget(st.session_state.authenticator)
@@ -62,13 +65,14 @@ def show_main_app():
 		LogoutWidget(st.session_state.authenticator)
 
 	if main_menu == "Home":
+		clear_previous_session("Home")
 		now = datetime.datetime.now()
 		st.markdown(
 		f"""
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.4.2.0-beta</p>
+		<p style="font-size:15px:">Version 0.4.3.1-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>

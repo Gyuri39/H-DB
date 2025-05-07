@@ -69,7 +69,7 @@ def save_DWD(DWD: DataWithDescription, collection_name="datasets"):
 	existing_docs = list(docs)
 
 	if existing_docs:
-		for doc in docs:
+		for doc in existing_docs:
 			existing_data = doc.to_dict()
 			existing_serialized_data = existing_data["data"]
 			existing_df = deserialize_dataframe(existing_serialized_data)

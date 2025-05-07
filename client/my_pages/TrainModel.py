@@ -11,9 +11,12 @@ from utils import DATA_DIR, MODEL_DIR, filter_filelist
 from server.data.firestore_handler import info_DWD, load_DWD
 from server.models import LinearRegressionModel, ElasticNetModel, GaussianProcessRegressionModel
 from io import BytesIO
+from utils.session import clear_previous_session
 
 def createPage():
 	st.title("Generate model")
+	clear_previous_session("TrainModel")
+
 	if "PreselectedFilterResult" not in st.session_state:
 		st.session_state.PreselectedFilterResult = None
 	if "DataFrame" not in st.session_state:

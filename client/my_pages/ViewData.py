@@ -11,9 +11,12 @@ from server.data.firestore_handler import load_DWD, info_DWD
 from server.data.backblaze_handler import generate_presigned_url
 from io import BytesIO
 import utils.discussion as discussion
+from utils.session import clear_previous_session
 
 def createPage():
 	st.title("View Data")
+	clear_previous_session("ViewData")
+
 	if "SelectedFileResult" not in st.session_state:
 		st.session_state.PreselectedFilterResult = None
 	if "__GRAPH_CREATED__" not in st.session_state:
@@ -132,7 +135,7 @@ def createPage():
 					"H" if "H" in all_columns
 					else "D" if "D" in all_columns
 					else "T" if "T" in all_columns
-					else 1
+					else ""
 				)
 				X_axis = st.selectbox("Select X-axis", all_columns, index=tmpXindex)
 				#Y_axis = st.selectbox("Select Y-axis", all_columns, index=tmpYindex)
