@@ -72,7 +72,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.4.3.1-beta</p>
+		<p style="font-size:15px:">Version 0.5.0.1-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
@@ -113,8 +113,8 @@ def show_main_app():
 			orientation="horizontal"
 		)
 		if sub_menu == "Generate Model":
-			st.warning("under maintenance")
-#			TrainModel.createPage()
+#			st.warning("under maintenance")
+			TrainModel.createPage()
 		elif sub_menu == "Apply Model":
 			st.warning("under maintenance")
 #			TestModel.createPage()

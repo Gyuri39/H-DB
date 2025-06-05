@@ -19,20 +19,20 @@ def createPage():
 
 	if "PreselectedFilterResult" not in st.session_state:
 		st.session_state.PreselectedFilterResult = None
-	if "DataFrame" not in st.session_state:
-		st.session_state.DataFrame = None
-	if "__LOADDATA_FLAG__" not in st.session_state:
-		st.session_state.__LOADDATA_FLAG__ = False
-	if "Model" not in st.session_state:
-		st.session_state.Model = None
-	if "fit_button" not in st.session_state:
-		st.session_state.fit_button = None
+	if "TrainModelDataFrame" not in st.session_state:
+		st.session_state.TrainModelDataFrame = None
+	if "TrainModelLoaddataFlag" not in st.session_state:
+		st.session_state.TrainModelLoaddataFlag = False
+	if "TrainModelModel" not in st.session_state:
+		st.session_state.TrainModelModel = None
+	if "TrainModelFitButton" not in st.session_state:
+		st.session_state.TrainModelFitButton = None
 	con11 = st.columns([1.0])
 	con21, con22 = st.columns([0.5, 0.5])
 	model_option = ['Linear regression', 'Elastic net', 'Gaussian process regression']
 	scaling_option = ['None', 'Standardization', 'Normalization [Min-Max]']
 
-	transform_options = ['linear', 'log', 'log10', 'reciprocal']
+	transform_options = ['linear', 'log10', 'reciprocal']
 	scale_options = ['Linear', 'Logarithmic', 'Reciprocal']
 	register_scale(ReciprocalScale)
 
@@ -60,8 +60,8 @@ def createPage():
 			else:
 				selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list_inherited)
 
-			concat_button = st.button("Data choice completed")
-		if concat_button:
+			concat_checkbox = st.checkbox("Data choice completed")
+		if concat_checkbox:
 			dataframes = {}
 			for file_name in selected_options:
 				dataframes[file_name] = info_DWD(load_DWD(file_name), 'data')
@@ -69,16 +69,39 @@ def createPage():
 			for df in dataframes.values():
 				common_columns &= set(df.columns)
 			common_columns = list(common_columns)
-			dataframes_common = {file_name: df[common_columns] for file_name, df in dataframes.items()}
+			#dataframes_common = {file_name: df[common_columns] for file_name, df in dataframes.items()}
+			dataframes_common = {}
+			for file_name, df in dataframes.items():
+				df_common = df[common_columns].copy()
+				df_common["__source__"] = file_name
+				dataframes_common[file_name] = df_common
 			df_concat = pd.concat(dataframes_common.values(), ignore_index=True)
-			st.session_state.DataFrame = df_concat
-			st.session_state.__LOADDATA_FLAG__ = True
+			source_counts = df_concat["__source__"].value_counts().to_dict()
+			with st.expander("Set weights for each dataset (default: all 1.0)"):
+				weights_dict = {}
+				for file_name in selected_options:
+					weights_dict[file_name] = st.number_input(
+						f"Weight for **{file_name}**", min_value=0.0, value=1.0, key=f"weight_{file_name}"
+					)
+			sample_weight_vector = df_concat["__source__"].map(
+				lambda src: weights_dict.get(src, 1.0) / source_counts.get(src, 1)
+			).values
+
+			st.session_state.TrainModelDataFrame = df_concat
+			st.session_state.TrainModelSampleWeight = sample_weight_vector
+			st.session_state.TrainModelLoaddataFlag = True
 		else:
+			st.session_state.TrainModelDataFrame = None
+			st.session_state.TrainModelSampleWeight = None
+			st.session_state.TrainModelLoaddataFlag = False
 			st.empty()
 
-	if st.session_state.__LOADDATA_FLAG__:
+	if st.session_state.TrainModelLoaddataFlag:
 		with con21:
-			df = st.session_state.DataFrame
+			df = st.session_state.TrainModelDataFrame
+			sample_weight = st.session_state.TrainModelSampleWeight
+			df = df.drop(columns="__source__")
+
 			numeric_columns = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
 			if len(numeric_columns) < 2:
 				st.error("The dataframe does not contain two or more numeric columns.")
@@ -98,7 +121,7 @@ def createPage():
 					y_train = df[target]
 					st.success("Training data prepared.")
 
-					model_chosen = st.selectbox('Select regression model', model_option, index=2)
+					model_chosen = st.selectbox('Select regression model', model_option, index=0)
 					feature_transform = ["linear"] * len(features)
 					target_transform = "linear"
 					with st.expander("Data transform option"):
@@ -116,6 +139,7 @@ def createPage():
 						model.set_scaler(scaling_chosen)
 						degree = st.number_input('polynomial degree of the model:', value=1, format="%d")
 						model.set_degree(degree)
+						model.set_sample_weight(sample_weight)
 					#Elastic net model
 					elif model_chosen == model_option[1]:
 						model = ElasticNetModel()
@@ -129,6 +153,7 @@ def createPage():
 						model.set_degree(degree)
 						model.set_alpha(alpha)
 						model.set_regularization(regularization)
+						model.set_sample_weight(sample_weight)
 					#Gaussian process regression model
 					elif model_chosen == model_option[2]:
 						model = GaussianProcessRegressionModel()
@@ -182,14 +207,14 @@ def createPage():
 					#Train
 					fit_button_clicked = st.button("Fit with the above setting")
 					if fit_button_clicked:
-						if st.session_state.fit_button == True:
-							st.session_state.fit_button = False
+						if st.session_state.TrainModelFitButton == True:
+							st.session_state.TrainModelFitButton = False
 						else:
-							st.session_state.fit_button = True
-					if st.session_state.fit_button == True:
+							st.session_state.TrainModelFitButton = True
+					if st.session_state.TrainModelFitButton == True:
 						model.train()
 						st.success("Model is successfully trained.")
-						st.session_state.Model = model
+						st.session_state.TrainModelModel = model
 						current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 						filename = f"{model.name}_{st.session_state.name}_{current_time}.model"
 						model.set_training_info(
@@ -202,15 +227,15 @@ def createPage():
 						description_others = st.text_input("Write anything you want to describe the model.")
 						if st.button("Save the model"):
 							model.set_description_others(description_others)
-							st.session_state.Model = model
+							st.session_state.TrainModelModel = model
 							model.save(filename)
 							st.success(f"File '{filename}' is saved.")
 					else:
-						st.session_state.Model = None
+						st.session_state.TrainModelModel = None
 
 		with con22:
-			if st.session_state.Model:
-				model = st.session_state.Model
+			if st.session_state.TrainModelModel:
+				model = st.session_state.TrainModelModel
 				Xoption = st.selectbox('Select one feature', features, index=0)
 				x_scale = st.selectbox("X-axis scale", scale_options, index=0, key='x_scale')
 				y_scale = st.selectbox("Y-axis scale", scale_options, index=0, key='y_scale')

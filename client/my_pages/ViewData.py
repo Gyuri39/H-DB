@@ -93,7 +93,12 @@ def createPage():
 			st.markdown(f"Purity information (if any): {info_DWD(dwd_object, 'descript_purity')}")
 			st.markdown(f"Pre-treatment information (if any): {info_DWD(dwd_object, 'descript_pretreatment')}")
 			st.markdown(f"Method in detail (if any): {info_DWD(dwd_object, 'descript_methoddetail')}")
-			st.markdown(f"Else (if any): {info_DWD(dwd_object, 'descript_else')}")
+			st.markdown("Else (if any):")
+			else_info = info_DWD(dwd_object, 'descript_else')
+			lines = [line.strip() for line in else_info.strip().split('\n') if line.strip()]
+			if lines:
+				for line in lines:
+					st.markdown(f"- {line}")
 			st.markdown(f"**This data has received {len(info_DWD(dwd_object, 'who_verified'))} verification(s).**")
 			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else last_selected)
 			
