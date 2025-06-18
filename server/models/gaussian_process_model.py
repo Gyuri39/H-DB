@@ -71,6 +71,7 @@ class GaussianProcessRegressionModel(BaseRegressionModel):
 		super().train()
 		self.best_params = f"GPR with kernel {self.model.kernel_}"
 		st.warning(self.best_params)
+		st.warning(self.model.alpha)
 		st.warning(self.train_score)
 
 	def predict(self, X):

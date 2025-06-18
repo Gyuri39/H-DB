@@ -11,7 +11,7 @@ st.set_page_config(
 #Import packages
 import datetime
 from streamlit_option_menu import option_menu
-from my_pages import ViewData, AddData, TrainModel, TestModel
+from my_pages import ViewData, AddData, TrainModel, TestModel, TrainGPR
 from server.login import OpenAuthenticator, LoginWidget, LogoutWidget, UserRegisterWidget, ForgotUsernameWidget, ForgotPasswordWidget, PasswordResetWidget
 import firebase_admin	# Firestore
 from utils.session import clear_previous_session 
@@ -59,8 +59,12 @@ def show_login_page():
 def show_main_app():
 	with st.sidebar:
 		st.write(f"Logged in as: **{st.session_state.name}**")
-		main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling", "Option"],
-			icons=['house', 'file-earmark', "graph-up", "gear"], menu_icon="cast", default_index=0)
+		if st.session_state["roles"] == "administrator":
+			main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling", "Option", "Advanced"],
+				icons=['house', 'file-earmark', 'graph-up', 'gear', 'shield-lock'], menu_icon="cast", default_index=0)
+		else:
+			main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling", "Option"],
+				icons=['house', 'file-earmark', "graph-up", "gear"], menu_icon="cast", default_index=0)
 		main_menu
 		LogoutWidget(st.session_state.authenticator)
 
@@ -88,8 +92,6 @@ def show_main_app():
 		#else:
 		#	st.empty()
 
-
-
 	elif main_menu == "Data Management":
 		sub_menu = option_menu(
 			menu_title="Data Management",
@@ -105,7 +107,8 @@ def show_main_app():
 			AddData.createPage()
 
 	elif main_menu == "Modeling":
-		sub_menu = option_menu(menu_title = "Modeling",
+		sub_menu = option_menu(
+			menu_title = "Modeling",
 			options=["Generate Model", "Apply Model"],
 			icons=["sliders", "android2"],
 			menu_icon="graph-up",
@@ -120,7 +123,20 @@ def show_main_app():
 #			TestModel.createPage()
 	elif main_menu == "Option":
 			st.warning("under development")
-
+	
+	elif main_menu == "Advanced":	# Only for administrators, backend
+		sub_menu = option_menu(
+			menu_title="Developer Option",
+			options=["Modify Data", "Generate GPR Model"],
+			icons=["screwdriver", "wifi-off"],
+			menu_icon='shield-lock',
+			default_index=0,
+			orientation='horizontal'
+		)
+		if sub_menu == "Modify Data":
+			st.warning("under development")
+		elif sub_menu == "Generate GPR Model":
+			TrainGPR.createPage()
 
 #Run the code
 def main():
