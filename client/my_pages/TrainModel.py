@@ -249,8 +249,11 @@ def createPage():
 					sorted_indices = np.argsort(model.train_X[Xoption])
 					sorted_X = model.train_X[Xoption][sorted_indices]
 					sorted_y_predicted = y_train_predicted.iloc[sorted_indices]
-					sorted_ystd_predicted = ystd_train_predicted.iloc[sorted_indices]
-					ax.errorbar(sorted_X, sorted_y_predicted.squeeze(), yerr=sorted_ystd_predicted.squeeze(), color='blue', alpha=0.3)
+					#sorted_ystd_predicted = ystd_train_predicted.iloc[sorted_indices]
+					sorted_ystd_predicted_low = ystd_train_predicted[0].iloc[sorted_indices]
+					sorted_ystd_predicted_high = ystd_train_predicted[1].iloc[sorted_indices]
+					#ax.errorbar(sorted_X, sorted_y_predicted.squeeze(), yerr=sorted_ystd_predicted.squeeze(), color='blue', alpha=0.3)
+					ax.errorbar(sorted_X, sorted_y_predicted.squeeze(), yerr=(sorted_ystd_predicted_low.squeeze(), sorted_ystd_predicted_high.squeeze()), color='blue', alpha=0.3)
 				# no deviations
 				elif model._yes_dev is False:
 					y_train_predicted = model.predict(model.train_X)

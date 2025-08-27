@@ -61,7 +61,7 @@ def createPage():
 	with st.expander("Data transform option"):
 		for i, feature in enumerate(features):
 			feature_transform[feature] = st.selectbox(f"Feature **{feature}**", transform_options, index=0, key=f"{feature}_transform")
-			target_transform = st.selectbox(f"Target **{target}**", transform_options, index=0, key="target_transform")
+		target_transform = st.selectbox(f"Target **{target}**", transform_options, index=0, key="target_transform")
 
 	def apply_transform(x, method):
 		if method == "linear":
@@ -72,6 +72,16 @@ def createPage():
 			return 1.0 / np.clip(x, 1e-30, None)
 		else:
 			raise ValueError("Invalid transform option")
+	def reverse_transform(x, method):
+		if method == "linear":
+			return x
+		elif method == "log":
+			return np.exp(x)
+		elif method == "reciprocal":
+			return 1.0 / x
+		else:
+			raise ValueError("Invliad reverse transform option")
+	
 	Xorig = df_concat[features].copy()
 	yorig = df_concat[target].copy()
 	X = df_concat[features].copy()
@@ -91,15 +101,14 @@ def createPage():
 
 	if gpy_approach == "by dataset":
 		num_groups = len(set(dataset_label))
-		rbf = GPy.kern.RBF(input_dim=X.shape[1], variance=1.0, lengthscale=1.0)
-		coreg = GPy.kern.Coregionalize(input_dim=1, output_dim=num_groups, rank=num_groups)
-		white = GPy.kern.White(input_dim=1)
+		d = X.shape[1]
+		rbf = GPy.kern.RBF(input_dim=d, variance=1.0, lengthscale=1.0, active_dims=list(range(d)))
+		coreg = GPy.kern.Coregionalize(input_dim=1, output_dim=num_groups, rank=num_groups, active_dims=[d])
+		white = GPy.kern.White(input_dim=1, active_dims=[d])
 		white_coreg = white.prod(coreg)
 		kern = rbf.prod(coreg) + white_coreg
 		X_aug = np.hstack([X, dataset_label.reshape(-1,1)])
-		print("DEBUG: X_aug")
-		model_gpy = GPy.models.GPRegression(X, y, kernel=kern)
-		print("DEBUG: model_gpy")
+		model_gpy = GPy.models.GPRegression(X_aug, y, kernel=kern)
 
 	elif gpy_approach == "by data point":
 		kernel = GPy.kern.RBF(input_dim=X.shape[1], variance=1.0, lengthscale=1.0)
@@ -146,7 +155,7 @@ def createPage():
 			learned_group_noise = white_variance * np.diag(B)
 			alpha_per_sample = learned_group_noise[dataset_label.astype(int)]
 			skl_kernel = C(rbf_variance, constant_value_bounds="fixed") * RBF(length_scale=rbf_lengthscale, length_scale_bounds="fixed")
-			skl_model = GaussianProcessRegressor(kernel=skl_kernel, alpha=alpha_per_sample, optimizer=None, normalize_y=True)
+			skl_model = GaussianProcessRegressor(kernel=skl_kernel, alpha=alpha_per_sample, optimizer=None, normalize_y=False)
 
 		elif gpy_approach == "by data point":
 			learned_noise = model_gpy[noise_key].values.flatten()
@@ -156,9 +165,10 @@ def createPage():
 			skl_model = GaussianProcessRegressor(kernel=skl_kernel, alpha=learned_noise, optimizer=None, normalize_y=True)
 		skl_model.fit(X, y.ravel())
 		st.success("Converted to scikit-learn GPR model")
-		st.warning(skl_model.kernel_)
-		st.warning(skl_model.alpha)
-		st.warning(skl_model.score(X,y))
+		st.warning(f"RBF kernel: {skl_model.kernel_}")
+		st.warning(f"White kernel: {skl_model.alpha}")
+		st.warning(f"r2 score: {skl_model.score(X,y)}")
+		st.success(f"LML: {skl_model.log_marginal_likelihood()}")
 
 		# Save
 		gpr_model = GaussianProcessRegressionModel()
@@ -178,20 +188,34 @@ def createPage():
 		x_col = features[0]
 		fig, ax = plt.subplots()
 		x_vals = Xorig.iloc[:, 0]
-		y_pred, y_std = gpr_model.predict(Xorig)
-		print(f"ypred: {y_pred}")
-		print(f"ystd: {y_std}")
-		ax.errorbar(x_vals, y_pred.values.flatten(), yerr=y_std.values.flatten(), fmt='o', alpha=0.5, label="Prediction")
+		y_pred, y_err = gpr_model.predict(Xorig)
+		#print(f"ypred: {y_pred}")
+		#print(f"yerr: {y_err}")
+		#ax.errorbar(x_vals, y_pred.values.flatten(), yerr=y_std.values.flatten(), fmt='o', alpha=0.5, label="Prediction")
+		ax.errorbar(
+			x_vals, 
+			y_pred.values.flatten(), 
+			yerr=(
+				y_err[0].values.flatten() if hasattr(y_err[0], "values") else y_err[0].flatten(), 
+				y_err[1].values.flatten() if hasattr(y_err[1], "values") else y_err[1].flatten()
+			), 
+			fmt='o', 
+			alpha=0.5, 
+			label="Prediction"
+		)
 		ax.scatter(x_vals, yorig, color='black', s=10, label="True")
 
 		if len(features) == 1:
 			x_grid = np.linspace(x_vals.min(), x_vals.max(), 200).reshape(-1,1)
-			ygrid_mean, ygrid_std = gpr_model.predict(pd.DataFrame(x_grid, columns=[x_col]))
+			ygrid_mean, ygrid_err = gpr_model.predict(pd.DataFrame(x_grid, columns=[x_col]))
 			x_grid = x_grid.flatten()
 			ygrid_mean = ygrid_mean.values.flatten()
-			ygrid_std = ygrid_std.values.flatten()
+			ygrid_err = (
+				ygrid_err[0].values.flatten() if hasattr(ygrid_err[0], "values") else ygrid_err[0].flatten(),
+				ygrid_err[1].values.flatten() if hasattr(ygrid_err[1], "values") else ygrid_err[1].flatten()
+			)
 			ax.plot(x_grid, ygrid_mean, color='blue', alpha=0.3, label="Mean (grid)")
-			ax.fill_between(x_grid, ygrid_mean - 2 * ygrid_std, ygrid_mean + 2 * ygrid_std, color='blue', alpha=0.1, label="95% reliability")
+			ax.fill_between(x_grid, ygrid_mean - ygrid_err[0], ygrid_mean + ygrid_err[1], color='blue', alpha=0.1, label="1 sigma reliability")
 
 		ax.set_xlabel(x_col)
 		ax.set_ylabel(target)
@@ -207,6 +231,76 @@ def createPage():
 			(ymin, ymax) = ax.get_ylim()
 			ax.set_ylim(ymax, ymin)
 		st.pyplot(fig)
+
+		# DEBUG: comparing two models
+		# ───────────────────────────────
+		# 1. 그리드 생성 (1-D 입력)
+		# ───────────────────────────────
+		x_col   = features[0]
+		x_vals  = Xorig[x_col]
+		RES     = 200                                   # 그리드 해상도
+		x_grid  = np.linspace(x_vals.min(),
+		                      x_vals.max(),
+		                      RES).reshape(-1, 1)        # shape = (RES,1)
+		df_grid = pd.DataFrame(x_grid, columns=[x_col])
+
+		# ───────────────────────────────
+		# 2. scikit-learn 예측
+		# ───────────────────────────────
+		skl_mean, skl_err = gpr_model.predict(df_grid)   # (μ, (σ−, σ+))
+		skl_mu   = skl_mean.values.flatten()
+		skl_lo   = (skl_err[0].values.flatten() if hasattr(skl_err[0], "values")
+		            else skl_err[0].flatten())
+		skl_up   = (skl_err[1].values.flatten() if hasattr(skl_err[1], "values")
+				    else skl_err[1].flatten())
+
+		# ───────────────────────────────
+		# 3. GPy 예측
+		#    GPy 반환은 (μ, σ²)이 기본이므로 sqrt 변환
+		# ───────────────────────────────
+		#gpy_mu, gpy_var = model_gpy.predict(x_grid)      # ndarray 반환
+		#gpy_mu = gpy_mu.flatten()
+		#gpy_sd = np.sqrt(gpy_var.flatten())              # 대칭 표준편차
+		#gpy_lo = gpy_mu - gpy_sd                         # 1 σ 구간
+		#gpy_up = gpy_mu + gpy_sd
+		all_preds = []
+		for col in features:
+			x_grid_transformed = apply_transform(x_grid, feature_transform[x_col])
+		for group_index in range(num_groups):
+			x_grid_aug = np.hstack([
+				x_grid_transformed,
+				np.full((x_grid.shape[0],1), group_index)
+			])
+			print(f"xgridaug with group index {group_index}")
+			print(x_grid_aug)
+			gpy_mu, gpy_var = model_gpy.predict(x_grid_aug)
+			gpy_mu = gpy_mu.flatten()
+			gpy_sd = np.sqrt(gpy_var.flatten())
+			gpy_lo = gpy_mu - gpy_sd
+			gpy_up = gpy_mu + gpy_sd
+			df_pred = pd.DataFrame({
+				x_col	: x_grid.flatten(),
+				"group"	: group_index,
+				"μ_GPy"	: reverse_transform(gpy_mu, target_transform),
+				"lo_GPy(−1σ)"  : reverse_transform(gpy_lo, target_transform),
+				"up_GPy(+1σ)"  : reverse_transform(gpy_up, target_transform),
+				"μ_skl"        : skl_mu,
+				"lo_skl(−1σ)"  : skl_lo,
+				"up_skl(+1σ)"  : skl_up,
+			})
+			all_preds.append(df_pred)
+		df_all = pd.concat(all_preds, ignore_index=True)
+
+		# ───────────────────────────────
+		# 5. 출력
+		# ───────────────────────────────
+		float_cols = df_pred.select_dtypes(include="float").columns
+		for col in float_cols:
+			df_all[col] = df_all[col].apply(lambda x: f"{x:.5e}")
+		st.write(f"### Grid prediction comparison ({RES} points)")
+		st.dataframe(df_all)          # 또는 st.table(df_pred.head())
+
+		fig1, ax1 = plt.subplots()
 
 	else:
 		st.empty()

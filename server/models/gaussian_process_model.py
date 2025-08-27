@@ -81,7 +81,10 @@ class GaussianProcessRegressionModel(BaseRegressionModel):
 		pred_result = self.model.predict(X_test, return_std=True)
 		if isinstance(pred_result, tuple) and len(pred_result) == 2:
 			returned_prediction = self.inverse_transformation(pred_result[0], self.target_transform)
-			returned_prederr = self.inverse_error_transformation(returned_prediction, pred_result[1], self.target_transform)
+			#returned_prederr = self.inverse_error_transformation(returned_prediction, pred_result[1], self.target_transform)
+			returned_prederr_lower = returned_prediction - self.inverse_transformation(pred_result[0] - pred_result[1], self.target_transform)
+			returned_prederr_upper = self.inverse_transformation(pred_result[0] + pred_result[1], self.target_transform) - returned_prediction
+			returned_prederr = (returned_prederr_lower, returned_prederr_upper)
 			return returned_prediction, returned_prederr
 		else:
 			raise ValueError(f"Unexpected output from predict(): {pred_result}")
