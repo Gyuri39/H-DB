@@ -15,6 +15,7 @@ from my_pages import ViewData, AddData, TrainModel, TestModel, TrainGPR
 from server.login import OpenAuthenticator, LoginWidget, LogoutWidget, UserRegisterWidget, ForgotUsernameWidget, ForgotPasswordWidget, PasswordResetWidget
 import firebase_admin	# Firestore
 from utils.session import clear_previous_session 
+from utils import init_session_state_from_dict_json
 
 def show_login_page():
 	with st.sidebar:
@@ -70,13 +71,14 @@ def show_main_app():
 
 	if main_menu == "Home":
 		clear_previous_session("Home")
+		init_session_state_from_dict_json("server/datasets_dict.json", overwrite=False)
 		now = datetime.datetime.now()
 		st.markdown(
 		f"""
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.6.0.0-beta</p>
+		<p style="font-size:15px:">Version 0.6.1.0-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>

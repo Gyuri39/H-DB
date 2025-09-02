@@ -25,10 +25,8 @@ def createPage():
 		return
 	filtered_list = filter_result.filelist
 	select_all = st.checkbox("Select all")
-	if select_all:
-		selected_files = st.container().multiselect("Selet one or more data", filtered_list, filtered_list)
-	else:
-		selected_files = st.container().multiselect("Select one or more data", filtered_list, None)
+	default_sel = filtered_list if select_all else []
+	selected_files = st.container().multiselect("Select one or more data", filtered_list, default_sel, format=lambda fn: st.session_state.get(fn, fn))
 	if not selected_files:
 		return
 

@@ -56,9 +56,9 @@ def createPage():
 			filtered_list = filter_result.filelist
 			select_all = st.checkbox("Select all")
 			if select_all:
-				selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list)
+				selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list, format_func=lambda fn: st.session_state.get(fn, fn))
 			else:
-				selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list_inherited)
+				selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list_inherited, format_func=lambda fn: st.session_state.get(fn, fn))
 
 			concat_checkbox = st.checkbox("Data choice completed")
 		if concat_checkbox:

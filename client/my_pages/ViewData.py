@@ -44,17 +44,15 @@ def createPage():
 		filtered_container = st.container()
 		filtered_list = [name for name in filter_result.filelist]
 		select_all = st.checkbox("Select all")
-		if select_all:
-			selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list)
-		else:
-			selected_options = filtered_container.multiselect("Select one or more data", filtered_list)
+		default_sel = filtered_list if select_all else []
+		selected_options = filtered_container.multiselect("Select one or more data", options=filtered_list, default=default_sel, format_func=lambda fn: st.session_state.get(fn, fn),)
 
 	with con21:
 		if selected_options:
 			st.subheader("View data info in detail")
 			filter_result.updateFilelist(selected_options)
 			st.session_state.PreselectedFilterResult = filter_result
-			last_selected = st.radio("Select a file to view info", selected_options)
+			last_selected = st.radio("Select a file to view info", selected_options, format_func=lambda fn: st.session_state.get(fn, fn))
 			if last_selected:
 				dwd_object = load_DWD(last_selected)
 				with st.expander("See dataframe"):
@@ -100,7 +98,7 @@ def createPage():
 				for line in lines:
 					st.markdown(f"- {line}")
 			st.markdown(f"**This data has received {len(info_DWD(dwd_object, 'who_verified'))} verification(s).**")
-			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else last_selected)
+			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else st.session_state[last_selected])
 			
 		else:
 			st.empty()
@@ -154,7 +152,7 @@ def createPage():
 					for file_name, df in dataframes.items():
 						for Y_axis in Y_axes:
 							if X_axis in df.columns and Y_axis in df.columns:
-								ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else file_name)
+								ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else st.session_state[file_name])
 					if st.session_state.DataFrameUploaded is not None:
 						df_upload = st.session_state.DataFrameUploaded
 						X_upload = st.selectbox("Select X-axis of uploaded file", df_upload.columns, index=0)
@@ -243,7 +241,7 @@ def createPage():
 			if st.checkbox("Download selected data as a single excel file"):
 				dfs = []
 				for file_name in selected_options:
-					st.session_state.DataLabels.setdefault(file_name, file_name)
+					st.session_state.DataLabels.setdefault(file_name, st.session_state[file_name])
 					dfs.append({"df": info_DWD(load_DWD(file_name), 'data'), "name1": file_name, "name2": st.session_state.DataLabels[file_name]})
 				create_excel_file(dfs)
 			else:
