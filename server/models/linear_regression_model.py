@@ -29,7 +29,7 @@ class LinearRegressionModel(BaseRegressionModel):
 			raise NotImplementedError("A scaler must be initialized before training.")
 		X_train_poly = self.poly.fit_transform(self.scaler.transform(self.apply_transformation(self.train_X, self.feature_transform)))
 		y_train = self.apply_transformation(self.train_y, self.target_transform)
-		self.model.fit(X_train_poly, y_train)
+		self.model.fit(X_train_poly, y_train, sample_weight=self.sample_weight)
 		self.train_score = self.model.score(X_train_poly, y_train)
 
 		feature_names = [f"x{i+1}" for i in range(self.scaler.n_features_in_)]
@@ -124,7 +124,7 @@ class ElasticNetModel(LinearRegressionModel):
 			self.alpha, self.l1_ratio = grid_search.best_params_['alpha'], grid_search.best_params_['l1_ratio']
 		
 		else:
-			self.model.fit(X_train_poly, y_train)
+			self.model.fit(X_train_poly, y_train, sample_weight=self.sample_weight)
 		feature_names = [f"x{i+1}" for i in range(self.scaler.n_features_in_)]
 		poly_feature_names = self.poly.get_feature_names_out(feature_names)
 		coefficients = self.model.coef_

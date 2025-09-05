@@ -10,9 +10,12 @@ from pathlib import Path
 from utils import MODEL_DIR, save_csv_button, VALID_DATA_FORMAT, convert_to_dataframe
 from server.models import BaseRegressionModel, LinearRegressionModel, ElasticNetModel, GaussianProcessRegressionModel
 from firebase_admin import firestore
+from utils.session import clear_previous_session
 
 def createPage():
 	st.title("Apply model")
+	clear_previous_session("TestModel")
+
 	if "Model" not in st.session_state:
 		st.session_state.Model = None
 	test_df = False

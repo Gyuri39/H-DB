@@ -9,11 +9,16 @@ from pathlib import Path
 from utils import DATA_DIR, PROPERTY_DICT, VALID_DATA_FORMAT, filter_filelist, save_csv_button, convert_to_dataframe, create_excel_file
 from server.data.firestore_handler import load_DWD, info_DWD
 from server.data.backblaze_handler import generate_presigned_url
+from server.data.data_confirm import update_verification
+import json
 from io import BytesIO
 import utils.discussion as discussion
+from utils.session import clear_previous_session
 
 def createPage():
 	st.title("View Data")
+	clear_previous_session("ViewData")
+
 	if "SelectedFileResult" not in st.session_state:
 		st.session_state.PreselectedFilterResult = None
 	if "__GRAPH_CREATED__" not in st.session_state:
@@ -41,17 +46,15 @@ def createPage():
 		filtered_container = st.container()
 		filtered_list = [name for name in filter_result.filelist]
 		select_all = st.checkbox("Select all")
-		if select_all:
-			selected_options = filtered_container.multiselect("Select one or more data", filtered_list, filtered_list)
-		else:
-			selected_options = filtered_container.multiselect("Select one or more data", filtered_list)
+		default_sel = filtered_list if select_all else []
+		selected_options = filtered_container.multiselect("Select one or more data", options=filtered_list, default=default_sel, format_func=lambda fn: st.session_state.get(fn, fn),)
 
 	with con21:
 		if selected_options:
 			st.subheader("View data info in detail")
 			filter_result.updateFilelist(selected_options)
 			st.session_state.PreselectedFilterResult = filter_result
-			last_selected = st.radio("Select a file to view info", selected_options)
+			last_selected = st.radio("Select a file to view info", selected_options, format_func=lambda fn: st.session_state.get(fn, fn))
 			if last_selected:
 				dwd_object = load_DWD(last_selected)
 				with st.expander("See dataframe"):
@@ -90,9 +93,62 @@ def createPage():
 			st.markdown(f"Purity information (if any): {info_DWD(dwd_object, 'descript_purity')}")
 			st.markdown(f"Pre-treatment information (if any): {info_DWD(dwd_object, 'descript_pretreatment')}")
 			st.markdown(f"Method in detail (if any): {info_DWD(dwd_object, 'descript_methoddetail')}")
-			st.markdown(f"Else (if any): {info_DWD(dwd_object, 'descript_else')}")
-			st.markdown(f"**This data has received {len(info_DWD(dwd_object, 'who_verified'))} verification(s).**")
-			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else last_selected)
+			st.markdown("Else (if any):")
+			else_info = info_DWD(dwd_object, 'descript_else')
+			lines = [line.strip() for line in else_info.strip().split('\n') if line.strip()]
+			if lines:
+				for line in lines:
+					st.markdown(f"- {line}")
+			#st.markdown(f"**This data has received {len(info_DWD(dwd_object, 'who_verified'))} verification(s).**")
+			who_raw = info_DWD(dwd_object, 'who_verified')
+			if isinstance(who_raw, str):
+				try:
+					who = json.loads(who_raw)
+				except Exception:
+					who = {}
+			elif isinstance(who_raw, dict):
+				who = who_raw
+			else:
+				who = {}
+
+			who_status = who.get("status", "pending")
+			who_by_name = who.get("by_name", "")
+			who_note = who.get("note", "")
+			if who_status == "pending":
+				st.markdown("Verification status: **pending**")
+			elif who_status in ["confirmed", "raised"]:
+				st.markdown(f"Verification status: **{who_status}** by {who_by_name}")
+				if who_note:
+					st.markdown(f"-- Note: {who_note}")
+				with st.expander(f"Review Verification History", expanded=False):
+					hist = who.get("history", [])
+					if not isinstance(hist, list):
+						hist = []
+					def _tx(x):
+						return x.get("at", "")
+					hist = sorted(hist, key=_tx, reverse=True)
+					df_hist = pd.DataFrame(hist)
+					ordered_cols = [c for c in ["status", "by_name", "note", "at"] if c in df_hist.columns]
+					if ordered_cols:
+						df_hist = df_hist[ordered_cols]
+					st.dataframe(df_hist, use_container_width=True)
+			else:
+				raise ValueError(f"Invalid who_status {who_status} with DWD {dwd_object}")
+			
+			if st.session_state["roles"] in ["administrator", "curator"]:
+				with st.expander("Enroll verification of data"):
+					verf_status = st.selectbox("Verification status", ["confirmed", "raised"])
+					verf_note = st.text_input("Note for verification")
+					if st.button("Upload your verification"):
+						entry = {
+							"status": verf_status,
+							"by_name": st.session_state.name,
+							"note": verf_note
+						}
+						update_verification(last_selected, entry)
+
+
+			st.session_state.DataLabels[last_selected] = st.text_input("\>\> Label in figure \<\<", value = st.session_state.DataLabels[last_selected] if last_selected in st.session_state.DataLabels else st.session_state[last_selected])
 			
 		else:
 			st.empty()
@@ -132,7 +188,7 @@ def createPage():
 					"H" if "H" in all_columns
 					else "D" if "D" in all_columns
 					else "T" if "T" in all_columns
-					else 1
+					else ""
 				)
 				X_axis = st.selectbox("Select X-axis", all_columns, index=tmpXindex)
 				#Y_axis = st.selectbox("Select Y-axis", all_columns, index=tmpYindex)
@@ -146,7 +202,7 @@ def createPage():
 					for file_name, df in dataframes.items():
 						for Y_axis in Y_axes:
 							if X_axis in df.columns and Y_axis in df.columns:
-								ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else file_name)
+								ax.scatter(df[X_axis], df[Y_axis], label = st.session_state.DataLabels[file_name] if file_name in st.session_state.DataLabels else st.session_state[file_name])
 					if st.session_state.DataFrameUploaded is not None:
 						df_upload = st.session_state.DataFrameUploaded
 						X_upload = st.selectbox("Select X-axis of uploaded file", df_upload.columns, index=0)
@@ -235,7 +291,7 @@ def createPage():
 			if st.checkbox("Download selected data as a single excel file"):
 				dfs = []
 				for file_name in selected_options:
-					st.session_state.DataLabels.setdefault(file_name, file_name)
+					st.session_state.DataLabels.setdefault(file_name, st.session_state[file_name])
 					dfs.append({"df": info_DWD(load_DWD(file_name), 'data'), "name1": file_name, "name2": st.session_state.DataLabels[file_name]})
 				create_excel_file(dfs)
 			else:

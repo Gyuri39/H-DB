@@ -27,6 +27,7 @@ class BaseRegressionModel:
 		self.train_ystd = None
 		self.scaler = None
 		self._yes_dev = False
+		self.sample_weight = None
 		self.training_info = None
 		self.description_others = None
 		self._yes_gridcv = False
@@ -153,6 +154,9 @@ class BaseRegressionModel:
 			self.scaler = scaler
 		else:
 			raise KeyError("Invalid scaler import trial")
+
+	def set_sample_weight(self, sample_weight):
+		self.sample_weight = sample_weight
 
 	def set_gridsearch(self, param_grid):
 		self._yes_gridcv = True

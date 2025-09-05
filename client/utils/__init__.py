@@ -7,21 +7,40 @@ from .graph_scale import ReciprocalScale
 from firebase_admin import firestore
 import io
 import xlsxwriter
+import json
+from typing import Mapping
 
 DATA_DIR = "client/datas/"
 MODEL_DIR = "client/models/"
-MATERIAL_LIST = ["bcc-W",
-					"bcc-Nb",
-					"bcc-Fe",
-					"fcc-Cu",
-					"fcc-Ni",
-					"hcp-Zr",
-					"SS304",
-					"SS316",
-					"H-gas",
-					"H-liquid",
-					"H-solid"
+MATERIAL_LIST = ["Ag",
+					"Ag(l)",
+					"Al",
+					"Al(l)",
+					"Au",
+					"Be",
+					"Co",
+					"Cu",
+					"Cu(l)",
+					"Fe",
+					"Fe(l)",
+					"Hf",
+					"K(l)",
+					"Mg",
+					"Mo",
+					"Nb",
+					"Ni",
+					"Ni(l)",
+					"Pd",
+					"Pt",
+					"Ta",
+					"Ti",
+					"U",
+					"V",
+					"W",
+					"Y",
+					"Zr"
 					]
+
 PROPERTY_DICT = {"Diffusivity": "diffusion coefficient in m<sup>2</sup> s<sup>-1</sup>",
 					"Solubility": "solubility constant in mol m<sup>-3</sup> Pa<sup>-0.5</sup>",
 					"Permeability": "permeability constant in mol m<sup>-1</sup> s<sup>-1</sup> Pa<sup>-0.5</sup>",
@@ -199,3 +218,15 @@ def are_dataframes_equal(df1, df2, tolerance=0.05):	#'tolerance' relative tolera
 	if df1_sorted.shape != df2_sorted.shape:
 		return False
 	return np.allclose(df1_sorted, df2_sorted, rtol=tolerance, atol=0) 
+
+def init_session_state_from_dict_json(path: str | Path, overwrite: bool = False):
+	p = Path(path)
+	if not p.exists():
+		st.warning(f"Dictionary file not found: {p}")
+		return
+	d: Mapping[str, str] = json.loads(p.read_text(encoding="utf-8"))
+	for k, v in d.items():
+		if overwrite:
+			st.session_state[k] = v
+		else:
+			st.session_state.setdefault(k, v)
