@@ -64,8 +64,8 @@ def show_main_app():
 			main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling", "Option", "Advanced"],
 				icons=['house', 'file-earmark', 'graph-up', 'gear', 'shield-lock'], menu_icon="cast", default_index=0)
 		else:
-			main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling", "Option"],
-				icons=['house', 'file-earmark', "graph-up", "gear"], menu_icon="cast", default_index=0)
+			main_menu = option_menu("Main Menu", ["Home", "Data Management", "Modeling"],
+				icons=['house', 'file-earmark', "graph-up"], menu_icon="cast", default_index=0)
 		main_menu
 		LogoutWidget(st.session_state.authenticator)
 
@@ -78,7 +78,7 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.6.2.0-beta</p>
+		<p style="font-size:15px:">Version 0.6.2.1-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
@@ -89,15 +89,20 @@ def show_main_app():
 		""",
 		unsafe_allow_html=True
 		)
+		st.link_button("Google drive for downloading the backup data (as of 2025/09/11)", "https://drive.google.com/drive/folders/1YPFs4wX2Sbsb36fuYsLbwaTpdVI31CHC?usp=drive_link", use_container_width=True)
 		#if st.checkbox("Change Password"):
 		#	PasswordResetWidget(st.session_state.authenticator)
 		#else:
 		#	st.empty()
 
 	elif main_menu == "Data Management":
+		if st.session_state["roles"] in ["administrator", "curator"]:
+			options = ["View Data", "Add Data"]
+		else:
+			options = ["View Data"]
 		sub_menu = option_menu(
 			menu_title="Data Management",
-			options=["View Data", "Add Data"],
+			options=options,
 			icons=["file-earmark-bar-graph", "file-earmark-arrow-up"],
 			menu_icon="file-earmark",
 			default_index=0,
@@ -121,8 +126,10 @@ def show_main_app():
 #			st.warning("under maintenance")
 			TrainModel.createPage()
 		elif sub_menu == "Apply Model":
-			st.warning("under maintenance")
-#			TestModel.createPage()
+			if st.session_state["roles"] == "administrator":
+				TestModel.createPage()
+			else:
+				st.warning("under maintenance")
 	elif main_menu == "Option":
 			st.warning("under development")
 	

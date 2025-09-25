@@ -99,7 +99,7 @@ def createPage():
 							"Prediction_std": test_ystd.flatten()
 				})
 			elif selected_model._yes_dev == False:
-				test_y = selected_model.predict(test_df).flatten()
+				test_y = selected_model.predict(test_df).to_numpy().flatten()
 				df_predicted = pd.DataFrame({"Prediction": test_y})
 			else:
 				raise NotImplementedError("Model is not implemented.")
