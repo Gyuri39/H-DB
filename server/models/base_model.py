@@ -1,3 +1,4 @@
+import streamlit as st
 import pickle
 import numpy as np
 import pandas as pd
@@ -41,6 +42,7 @@ class BaseRegressionModel:
 
 	def apply_transformation(self, data, transform_types):
 		transformed_data = data.copy()
+		st.dataframe(transformed_data)
 		if isinstance(transformed_data, pd.Series):
 			transformed_data = transformed_data.to_frame()
 		for i, transform_type in enumerate(transform_types):

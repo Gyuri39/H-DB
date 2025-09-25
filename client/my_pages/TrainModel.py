@@ -29,7 +29,8 @@ def createPage():
 		st.session_state.TrainModelFitButton = None
 	con11 = st.columns([1.0])
 	con21, con22 = st.columns([0.5, 0.5])
-	model_option = ['Linear regression', 'Elastic net', 'Gaussian process regression']
+	model_option = ['Linear regression', 'Elastic net']
+	#model_option = ['Linear regression', 'Elastic net', 'Gaussian process regression']
 	scaling_option = ['None', 'Standardization', 'Normalization [Min-Max]']
 
 	transform_options = ['linear', 'log10', 'reciprocal']
@@ -122,12 +123,14 @@ def createPage():
 					st.success("Training data prepared.")
 
 					model_chosen = st.selectbox('Select regression model', model_option, index=0)
-					feature_transform = ["linear"] * len(features)
-					target_transform = "linear"
+					#feature_transform = ["linear"] * len(features)
+					#target_transform = "linear"
+					feature_transform = ["reciprocal"] * len(features)
+					target_transform = ["log10"]
 					with st.expander("Data transform option"):
 						for i, feature in enumerate(features):
-							feature_transform[i] = st.selectbox(f"Feature **{feature}**", transform_options, index=0)
-						target_transform = st.selectbox(f"Target **{target}**", transform_options, index=0)
+							feature_transform[i] = st.selectbox(f"Feature **{feature}**", transform_options, index=2)
+						target_transform = st.selectbox(f"Target **{target}**", transform_options, index=1)
 					scaling_chosen = st.selectbox('Select data scaling option', scaling_option, index=2)
 
 					#Linear regression model
@@ -237,8 +240,8 @@ def createPage():
 			if st.session_state.TrainModelModel:
 				model = st.session_state.TrainModelModel
 				Xoption = st.selectbox('Select one feature', features, index=0)
-				x_scale = st.selectbox("X-axis scale", scale_options, index=0, key='x_scale')
-				y_scale = st.selectbox("Y-axis scale", scale_options, index=0, key='y_scale')
+				x_scale = st.selectbox("X-axis scale", scale_options, index=2, key='x_scale')
+				y_scale = st.selectbox("Y-axis scale", scale_options, index=1, key='y_scale')
 				
 				fig, ax = plt.subplots()
 				ax.scatter(model.train_X[Xoption], model.train_y, marker='s', color='black', alpha=0.5, label='True value', s=20)
