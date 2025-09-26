@@ -123,15 +123,22 @@ def show_main_app():
 			orientation="horizontal"
 		)
 		if sub_menu == "Generate Model":
-#			st.warning("under maintenance")
-			TrainModel.createPage()
+			if st.session_state["roles"] == "guest":
+				st.warning("available for registered users")
+			else:
+				TrainModel.createPage()
 		elif sub_menu == "Apply Model":
 			if st.session_state["roles"] == "administrator":
 				TestModel.createPage()
 			else:
-				st.warning("under maintenance")
+				st.warning("available for registered users")
 	elif main_menu == "Option":
 			st.warning("under development")
+			try:
+				if st.session_state.authenticator.reset_password(st.session_state.get('username')):
+					st.success('Password modified successfully')
+			except Exception as e:
+				st.error(e)
 	
 	elif main_menu == "Advanced":	# Only for administrators, backend
 		sub_menu = option_menu(

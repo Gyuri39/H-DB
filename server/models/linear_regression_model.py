@@ -48,11 +48,6 @@ class LinearRegressionModel(BaseRegressionModel):
 		if self.model is None:
 			raise NotImplementedError("A model must be initilalized before predicting.")
 
-		st.warning("====DEBUG START====")
-		st.write(X)
-		st.write(self.apply_transformation(X, self.feature_transform))
-		st.write(self.scaler.transform(self.apply_transformation(X,self.feature_transform)))
-		st.warning("====DEBUG END====")
 		X_scaled = self.scaler.transform(self.apply_transformation(X, self.feature_transform))
 		X_test_poly = self.poly.transform(X_scaled)
 		y_pred = self.model.predict(X_test_poly)
