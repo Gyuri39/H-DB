@@ -42,11 +42,11 @@ def createPage():
 			df_min = train_X.min()
 			df_max = train_X.max()
 			
-			want_test = st.selectbox("What do you want to evaluate with the model?", ["A point", "Training set itself", "Test set", "Grid points"])
-			if want_test == "A point":
+			want_test = st.selectbox("What do you want to evaluate with the model?", ["A single point", "Training set itself", "Test set", "Grid points"])
+			if want_test == "A single point":
 				test_dict = {}
 				for name in feature_names:
-					test_dict[name] = st.number_input(f"Enter the value for {name}")
+					test_dict[name] = st.number_input(f"Enter the value for {name}", value=300)
 				test_df = pd.DataFrame([test_dict], columns=feature_names)
 			elif want_test == "Training set itself":
 				test_df = train_X
