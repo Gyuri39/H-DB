@@ -78,10 +78,13 @@ def show_main_app():
 		<div style="text-align: center; font-size: 20px;">
 		<p style="font-size:50px;"><b>Hydrogen Dataset</b></p>
 		<p></p>
-		<p style="font-size:15px:">Version 0.6.3.0.-beta</p>
+		<p style="font-size:15px:">Version 0.6.3.1.-beta</p>
 		<p>Welcome to the beta test of our application!</p>
 		<p>This version is under active development, and your feedback is invaluable to us.</p>
+		<p><b>Accessbility may be limited based on your designated authority.</b></p>
 		<p>Please report any bugs or issues you encounter during testing.</p>
+		<p></p>
+		<p><i>Contact: Donggyu LEE, ldg8781@snu.ac.kr</i></p>
 		<p></p>
 		<p><b>Select a menu from the sidebar </b> to access the tools.</p>
 		<p></p>
@@ -89,7 +92,11 @@ def show_main_app():
 		""",
 		unsafe_allow_html=True
 		)
-		st.link_button("Google drive for downloading the backup data (as of 2025/09/11)", "https://drive.google.com/drive/folders/1YPFs4wX2Sbsb36fuYsLbwaTpdVI31CHC?usp=drive_link", use_container_width=True)
+		if st.session_state["roles"] == "guest":
+			st.session_state["gdrive_disabled"] = True
+		else:
+			st.session_state["gdrive_disabled"] = False
+		st.link_button("Google drive for downloading the backup data (as of 2025/09/11)", "https://drive.google.com/drive/folders/1YPFs4wX2Sbsb36fuYsLbwaTpdVI31CHC?usp=drive_link", use_container_width=False, disabled=st.session_state["gdrive_disabled"])
 		#if st.checkbox("Change Password"):
 		#	PasswordResetWidget(st.session_state.authenticator)
 		#else:
