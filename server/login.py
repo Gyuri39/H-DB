@@ -67,7 +67,7 @@ def OpenAuthenticator():
 def LoginWidget(authenticator):
 #	authenticator = OpenAuthenticator()
 	try:
-		authenticator.login(location = "main", max_login_attempts = 10, single_session = False)
+		authenticator.login(location = "main", max_login_attempts = 30, single_session = False)
 	except LoginError as e:
 		st.error(e)
 
